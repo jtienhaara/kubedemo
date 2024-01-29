@@ -1,0 +1,96 @@
+#
+# Environment variables for spinning up a qemu VM called "test0001":
+#
+
+#
+# Information about the host in which the VM runs, including
+# email address to ssh into the VM (optional):
+#
+#     HOST_USER_NAME='jane.doe'
+#     HOST_NAME='node42'
+#     HOST_DOMAIN_NAME='example.com'
+#     HOST_EMAIL_ADDRESS='jane.doe@node42.example.com'
+#
+
+#
+# CPU(s):
+#
+VM_NUM_CPUS='2'
+VM_CPU='host'
+VM_ARCHITECTURE='x86_64'
+
+#
+# Memory:
+#
+VM_MEMORY='8G'
+
+#
+# Network:
+#
+VM_MAC_ADDRESS='0a:3c:5a:1c:00:01'
+VM_CIDR='10.42.0.0/16'
+VM_IP_ADDRESS='10.42.0.101'
+
+VM_PORTS='7080:80 7443:443'
+VM_SSH_PORT='7022'
+
+#
+# Fully qualified domain name for the VM (optional):
+#
+#     VM_FQDN='TEMPLATE.example.com'
+#
+
+#
+# Display:
+#
+VM_DISPLAY='none'
+VM_DISPLAY_OPTIONS=''
+
+#
+# Disk(s):
+# (Make sure the operating system / boot disk is listed first.)
+#
+VM_DISKS='os mon1 mon2 mon3 osd1 osd2 osd3'
+
+#
+# Operating system:
+#
+# Examples:
+#     Alpine 3.19.0:
+#     https://dl-cdn.alpinelinux.org/alpine/v3.19/releases/cloud/nocloud_alpine-3.19.0-x86_64-uefi-cloudinit-r0.qcow2
+#
+#     Debian 12 Bookworm:
+#     https://cloud.debian.org/images/cloud/bookworm/latest/debian-12-generic-amd64.qcow2
+#
+#     Ubuntu 22.04 Jammy Jellyfish:
+#     https://cloud-images.ubuntu.com/jammy/current/jammy-server-cloudimg-amd64-disk-kvm.img
+#
+#     CentOS Stream 9 something something:
+#     https://cloud.centos.org/centos/9-stream/x86_64/images/CentOS-Stream-GenericCloud-9-20240101.0.x86_64.qcow2
+#
+VM_DISK_os_IMAGE='https://cloud.debian.org/images/cloud/bookworm/latest/debian-12-generic-amd64.qcow2'
+VM_DISK_mon1_IMAGE=''
+VM_DISK_mon2_IMAGE=''
+VM_DISK_mon3_IMAGE=''
+VM_DISK_osd1_IMAGE=''
+VM_DISK_osd2_IMAGE=''
+VM_DISK_osd3_IMAGE=''
+
+VM_DISK_os_SIZE='40G'
+VM_DISK_mon1_SIZE='1G'
+VM_DISK_mon2_SIZE='1G'
+VM_DISK_mon3_SIZE='1G'
+VM_DISK_osd1_SIZE='1G'
+VM_DISK_osd2_SIZE='1G'
+VM_DISK_osd3_SIZE='1G'
+
+#
+# User and identity:
+#
+VM_USER='k8scanada'
+VM_GROUP='TEMPLATE'
+
+#
+# Zero or more cloud-init scripts to run at first boot:
+#
+VM_CLOUD_INIT_RUN='os_setup_debian.sh install_kind.sh install_kubectl.sh check_or_shutdown.sh'
