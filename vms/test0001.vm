@@ -13,6 +13,11 @@
 #
 
 #
+# Machine:
+#
+VM_MACHINE='q35'
+
+#
 # CPU(s):
 #
 VM_NUM_CPUS='2'
@@ -91,6 +96,11 @@ VM_USER='k8scanada'
 VM_GROUP='TEMPLATE'
 
 #
-# Zero or more cloud-init scripts to run at first boot:
+# Cloud-init scripts to run at first boot (optional):
 #
-VM_CLOUD_INIT_RUN='os_setup_debian.sh install_kind.sh install_kubectl.sh check_or_shutdown.sh'
+VM_CLOUD_INIT_RUN='os_setup_debian.sh ../kubernetes/install_foundation.sh check_or_shutdown.sh'
+
+#
+# Data to tar up and copy into the VM during cloud-init (optional):
+#
+VM_CLOUD_INIT_DATA='../kubernetes/foundation'

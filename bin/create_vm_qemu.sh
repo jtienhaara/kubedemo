@@ -171,6 +171,9 @@ VM_PARENT_DIR=`dirname "$VM_FILE" \
                    | sed "s|^\./|$THIS_DIR/|" \
                    | sed "s|^\.\./|$PARENT_DIR/|" \
                    | sed "s|^\\([^/].*\\)\$|$THIS_DIR/\\1|"`
+VM_RELATIVE_PARENT_DIR=`echo "$VM_PARENT_DIR" \
+                            | sed "s|^$THIS_DIR/||" \
+                            | sed "s|^$PARENT_DIR/||"`
 # We'll create (if necessary) VM_DIR="$VM_VAR_DIR/${VM_NAME}-files".
 # E.g. /x/vms/test0001.vm -> VM_VAR_DIR=/x/var/lib/vms,
 # VM_DIR=/x/var/lib/vms/test0001.
@@ -233,6 +236,14 @@ then
     IS_ERROR=true
 else
     echo "      OK VM_NUM_CPUS"
+fi
+
+if test -z "$VM_MACHINE"
+then
+    echo "ERROR Illegal VM_MACHINE: '$VM_MACHINE'" >&2
+    IS_ERROR=true
+else
+    echo "      OK VM_MACHINE"
 fi
 
 if test -z "$VM_CPU"
@@ -344,6 +355,7 @@ else
 fi
 
 # VM_CLOUD_INIT_RUN can be empty.
+# VM_CLOUD_INIT_DATA can be empty.
 
 echo "    Checking VM_DISK_*_* settings:"
 for VM_DISK in $VM_DISKS
@@ -394,31 +406,28 @@ do
 done
 
 VM_CLOUD_INIT_SCRIPTS=""
+VM_CLOUD_INIT_RUNCMDS=""
 if test ! -z "$VM_CLOUD_INIT_RUN"
 then
     echo "    Checking VM_CLOUD_INIT_RUN script(s): $VM_CLOUD_INIT_RUN"
     for VM_CLOUD_INIT_SCRIPT in $VM_CLOUD_INIT_RUN
     do
-        VM_CLOUD_INIT_SEARCH_PATH="$VM_PARENT_DIR $THIS_DIR $VM_VAR_DIR"
         VM_CLOUD_INIT_SCRIPT_PATH=""
-        for VM_CLOUD_INIT_DIR in $VM_CLOUD_INIT_SEARCH_PATH
-        do
-            # Relative path?
-            if test -e "$VM_CLOUD_INIT_DIR/$VM_CLOUD_INIT_SCRIPT"
-            then
-                VM_CLOUD_INIT_SCRIPT_PATH="$VM_CLOUD_INIT_DIR/$VM_CLOUD_INIT_SCRIPT"
-                break
-            fi
-        done
+        VM_CLOUD_INIT_SCRIPT_MOUNTED=""
 
-        if test -z "VM_CLOUD_INIT_SCRIPT_PATH"
+        if test -e "$VM_PARENT_DIR/$VM_CLOUD_INIT_SCRIPT"
         then
+            # Relative path:
+            VM_CLOUD_INIT_SCRIPT_PATH="$VM_PARENT_DIR/$VM_CLOUD_INIT_SCRIPT"
+            VM_CLOUD_INIT_SCRIPT_MOUNTED="/cloud-init/$VM_RELATIVE_PARENT_DIR/$VM_CLOUD_INIT_SCRIPT"
+        else
             # Absolute path?
-            if test -e "$VM_CLOUD_INIT_SCRIPT"
+            if test -e "/$VM_CLOUD_INIT_SCRIPT"
             then
-                VM_CLOUD_INIT_SCRIPT_PATH="$VM_CLOUD_INIT_SCRIPT"
+                VM_CLOUD_INIT_SCRIPT_PATH="/$VM_CLOUD_INIT_SCRIPT"
+                VM_CLOUD_INIT_SCRIPT_MOUNTED="/cloud-init/$VM_CLOUD_INIT_SCRIPT"
             else
-                echo "ERROR Could not find cloud-init script in (/ $VM_CLOUD_INIT_SEARCH_PATH): $VM_CLOUD_INIT_SCRIPT" >&2
+                echo "ERROR Could not find cloud-init script in (/ $VM_PARENT_DIR): $VM_CLOUD_INIT_SCRIPT" >&2
                 exit 8
             fi
         fi
@@ -426,7 +435,43 @@ then
         NEW_VM_CLOUD_INIT_SCRIPTS="$VM_CLOUD_INIT_SCRIPTS $VM_CLOUD_INIT_SCRIPT_PATH"
         VM_CLOUD_INIT_SCRIPTS="$NEW_VM_CLOUD_INIT_SCRIPTS"
 
+        NEW_VM_CLOUD_INIT_RUNCMDS="$VM_CLOUD_INIT_RUNCMDS $VM_CLOUD_INIT_SCRIPT_MOUNTED"
+        VM_CLOUD_INIT_RUNCMDS="$NEW_VM_CLOUD_INIT_RUNCMDS"
+
         echo "      OK $VM_CLOUD_INIT_SCRIPT_PATH"
+    done
+fi
+
+VM_CLOUD_INIT_DATA_FILES=""
+if test ! -z "$VM_CLOUD_INIT_DATA"
+then
+    echo "    Checking VM_CLOUD_INIT_DATA file(s): $VM_CLOUD_INIT_DATA"
+    for VM_CLOUD_INIT_DATA_FILE in $VM_CLOUD_INIT_DATA
+    do
+        VM_CLOUD_INIT_DATA_PATH=""
+        if test -e "$VM_PARENT_DIR/$VM_CLOUD_INIT_DATA_FILE" \
+                -o -d "$VM_PARENT_DIR/$VM_CLOUD_INIT_DATA_FILE" \
+                -o -L "$VM_PARENT_DIR/$VM_CLOUD_INIT_DATA_FILE"
+        then
+            # Relative path:
+            VM_CLOUD_INIT_DATA_PATH="$VM_PARENT_DIR/$VM_CLOUD_INIT_DATA_FILE"
+        else
+            # Absolute path?
+            if test -e "/$VM_CLOUD_INIT_DATA_FILE" \
+                    -o -d "/$VM_CLOUD_INIT_DATA_FILE" \
+                    -o -L "/$VM_CLOUD_INIT_DATA_FILE"
+            then
+                VM_CLOUD_INIT_DATA_PATH="/$VM_CLOUD_INIT_DATA_FILE"
+            else
+                echo "ERROR Could not find cloud-init data file in (/ $VM_PARENT_DIR): $VM_CLOUD_INIT_DATA_FILE" >&2
+                exit 8
+            fi
+        fi
+
+        NEW_VM_CLOUD_INIT_DATA_FILES="$VM_CLOUD_INIT_DATA_FILES $VM_CLOUD_INIT_DATA_PATH"
+        VM_CLOUD_INIT_DATA_FILES="$NEW_VM_CLOUD_INIT_DATA_FILES"
+
+        echo "      OK $VM_CLOUD_INIT_DATA_PATH"
     done
 fi
 
@@ -571,53 +616,6 @@ then
     exit 15
 fi
 
-IS_FIRST_CLOUD_INIT=true
-VM_CLOUD_INIT_RUNCMDS=""
-for VM_CLOUD_INIT_SCRIPT in $VM_CLOUD_INIT_SCRIPTS
-do
-    if test "$IS_FIRST_CLOUD_INIT" = "true"
-    then
-        echo "write_files:" >> "$VM_DIR/cloud-config/user-data.yaml" \
-            || exit 15
-        IS_FIRST_CLOUD_INIT=false
-    fi
-
-    VM_CLOUD_INIT_SCRIPT_BASE64=`cat "$VM_CLOUD_INIT_SCRIPT" \
-                                     | base64 --wrap 0`
-    if test -z "$VM_CLOUD_INIT_SCRIPT_BASE64"
-    then
-        echo "ERROR Failed to hash cloud-init script: $VM_CLOUD_INIT_SCRIPT" >&2
-        exit 15
-    fi
-
-    VM_CLOUD_INIT_FILENAME=`basename "$VM_CLOUD_INIT_SCRIPT"`
-    if test -z "$VM_CLOUD_INIT_FILENAME"
-    then
-        echo "ERROR Failed to get filename of script: $VM_CLOUD_INIT_SCRIPT" >&2
-        exit 15
-    fi
-
-    cat  >> "$VM_DIR/cloud-config/user-data.yaml" << END_OF_CLOUD_INIT_SCRIPT
-  - path: /root/$VM_CLOUD_INIT_FILENAME
-    encoding: b64
-    content: $VM_CLOUD_INIT_SCRIPT_BASE64
-    owner: root:root
-    permissions: '0700'
-END_OF_CLOUD_INIT_SCRIPT
-    EXIT_CODE=$?
-
-    if test $EXIT_CODE -ne 0
-    then
-        echo "ERROR Could not write $VM_CLOUD_INIT_SCRIPT to cloud-init file: $VM_DIR/cloud-config/user-data.yaml" >&2
-        exit 15
-    fi
-
-    NEW_VM_CLOUD_INIT_RUNCMDS="$VM_CLOUD_INIT_RUNCMDS /root/$VM_CLOUD_INIT_FILENAME"
-    VM_CLOUD_INIT_RUNCMDS="$NEW_VM_CLOUD_INIT_RUNCMDS"
-
-    echo "      OK writing $VM_CLOUD_INIT_SCRIPT"
-done
-
 cat >> "$VM_DIR/cloud-config/user-data.yaml" << END_OF_CLOUD_CONFIG
 runcmd:
   - echo "======================================================================"
@@ -628,15 +626,21 @@ runcmd:
   - echo "export export VM_PORTS=\"$VM_PORTS\"" >> /root/.bashrc
   - echo "export export VM_DISKS=\"$VM_DISKS\"" >> /root/.bashrc
   - . /root/.bashrc
+  - while test ! -d /home/$VM_USER; do echo "Waiting 5 seconds for user $VM_USER home directory to be created..."; sleep 5; done
   # 128 bit random password:
-  - head --bytes 16 /dev/urandom | base64 --wrap 0 | chpasswd
+  - head --bytes 16 /dev/urandom | base64 --wrap 0 | sed 's|^\\(.*\\)\$|$VM_USER:\\1|' | chpasswd || ( echo "***** FAILED to chpasswd $VM_USER *****" >&2 ; shutdown -h now )
+  - echo "Mounting /cloud-init:"
+  - mkdir -p /cloud-init
+  - mount -t ext4 /dev/vdc /cloud-init
+  - chown -R $VM_USER:$VM_GROUP /cloud-init/
+  - echo "SUCCESS Mounting /cloud-init."
   - echo "----------------------------------------------------------------------"
 END_OF_CLOUD_CONFIG
 EXIT_CODE=$?
 
 if test $EXIT_CODE -ne 0
 then
-    echo "ERROR Could not add sshd to cloud-init file: $VM_DIR/cloud-config/user-data.yaml" >&2
+    echo "ERROR Could not add initial runcmds to cloud-init file: $VM_DIR/cloud-config/user-data.yaml" >&2
     exit 15
 fi
 
@@ -648,7 +652,7 @@ do
     echo "  - echo \"$VM_CLOUD_INIT_RUNCMD:\"" \
          >> "$VM_DIR/cloud-config/user-data.yaml" \
         || exit 15
-    echo "  - $VM_CLOUD_INIT_RUNCMD" \
+    echo "  - $VM_CLOUD_INIT_RUNCMD || ( echo \"***** FAILED to run $VM_CLOUD_INIT_RUNCMD *****\" >&2 ; shutdown -h now )" \
          >> "$VM_DIR/cloud-config/user-data.yaml" \
         || exit 15
     echo "  - echo \"----------------------------------------------------------------------\"" \
@@ -657,6 +661,8 @@ do
 
     echo "      OK adding runcmd $VM_CLOUD_INIT_SCRIPT"
 done
+
+echo "    OK populating cloud-config directory"
 
 
 # ======================================================================
@@ -726,6 +732,7 @@ do
 
     echo "      OK disks/disk_${VM_DISK}.qcow2 ($VM_DISK_SIZE)"
 done
+echo "    OK downloading disk image(s) (if any)..."
 
 echo "    Creating empty disk(s) (if any)..."
 for VM_DISK in $VM_DISKS
@@ -759,6 +766,113 @@ do
     echo "      OK disks/disk_${VM_DISK}.qcow2 ($VM_DISK_SIZE)"
 done
 
+echo "      OK creating empty disk(s)."
+
+echo "    Creating cloud-init disk:"
+VM_CLOUD_INIT_DIR="$VM_DIR/disks/cloud-init"
+VM_CLOUD_INIT_DISK="$VM_DIR/disks/cloud-init.img"
+# Enough room for metadata; we'll expand the # of bytes for scripts, data files:
+VM_CLOUD_INIT_BYTES=524288
+
+for VM_CLOUD_INIT_FILE in $VM_CLOUD_INIT_SCRIPTS $VM_CLOUD_INIT_DATA_FILES
+do
+    echo "      Cloud-init file size ($VM_CLOUD_INIT_FILE):"
+    VM_CLOUD_INIT_FILE_BYTES=`sudo du -s -c -b $VM_CLOUD_INIT_FILE \
+                                  | tail -1 \
+                                  | awk '{ printf $1; }'`
+    EXIT_CODE=$?
+    if test -z "$VM_CLOUD_INIT_FILE_BYTES" \
+            -o $EXIT_CODE -ne 0
+    then
+        echo "ERROR Could not determine bytes size of cloud-init file ($VM_CLOUD_INIT_FILE): $VM_CLOUD_INIT_FILE_BYTES" >&2
+        exit 16
+    fi
+
+    NEW_VM_CLOUD_INIT_BYTES=`expr $VM_CLOUD_INIT_BYTES + $VM_CLOUD_INIT_FILE_BYTES`
+    VM_CLOUD_INIT_BYTES="$NEW_VM_CLOUD_INIT_BYTES"
+done
+
+echo "      Creating cloud-init disk image ($VM_CLOUD_INIT_BYTES bytes):"
+dd if=/dev/zero of=$VM_CLOUD_INIT_DISK bs=1 \
+   count=$VM_CLOUD_INIT_BYTES \
+    || exit 16
+if test ! -s "$VM_CLOUD_INIT_DISK"
+then
+    echo "ERROR $VM_CLOUD_INIT_DISK is 0 bytes after dd!" >&2
+    exit 16
+fi
+echo "        OK creating cloud-init disk image."
+
+echo "      Making ext4 filesystem on cloud-init disk image:"
+# -F to force making a file system on non-block device:
+sudo mkfs.ext4 -L "cloud-init" -F "$VM_CLOUD_INIT_DISK" \
+    || exit 16
+echo "        OK making ext4 filesystem on cloud-init disk image."
+
+echo "      Copying cloud-init files to cloud-init disk image:"
+mkdir -p "$VM_CLOUD_INIT_DIR" \
+    || exit 16
+
+sudo mount -t ext4 -o loop "$VM_CLOUD_INIT_DISK" "$VM_CLOUD_INIT_DIR" \
+    || exit 16
+
+sudo chown -R "$HOST_USER_NAME" "$VM_CLOUD_INIT_DIR"
+EXIT_CODE=$?
+if test $EXIT_CODE -ne 0
+then
+    sudo umount "$VM_CLOUD_INIT_DIR"
+    exit 16
+fi
+
+for VM_CLOUD_INIT_FILE in $VM_CLOUD_INIT_RUN $VM_CLOUD_INIT_DATA
+do
+    VM_CLOUD_INIT_FILE_PATH=""
+    VM_CLOUD_INIT_FILE_MOUNTED=""
+
+    if test -e "$VM_PARENT_DIR/$VM_CLOUD_INIT_FILE"
+    then
+        # Relative path:
+        VM_CLOUD_INIT_FILE_PATH="$VM_PARENT_DIR/$VM_CLOUD_INIT_FILE"
+        VM_CLOUD_INIT_FILE_MOUNTED="$VM_CLOUD_INIT_DIR/$VM_RELATIVE_PARENT_DIR/$VM_CLOUD_INIT_FILE"
+    else
+        # Absolute path?
+        if test -e "/$VM_CLOUD_INIT_FILE"
+        then
+            VM_CLOUD_INIT_FILE_PATH="/$VM_CLOUD_INIT_FILE"
+            VM_CLOUD_INIT_FILE_MOUNTED="$VM_CLOUD_INIT_DIR/$VM_CLOUD_INIT_FILE"
+        else
+            echo "ERROR Could not find cloud-init file in (/ $VM_PARENT_DIR): $VM_CLOUD_INIT_FILE" >&2
+            sudo umount "$VM_CLOUD_INIT_DIR"
+            exit 16
+        fi
+    fi
+
+    VM_CLOUD_INIT_DIR_MOUNTED=`dirname "$VM_CLOUD_INIT_FILE_MOUNTED"`
+
+    echo "        Copying $VM_CLOUD_INIT_FILE_PATH to $VM_CLOUD_INIT_DIR_MOUNTED:"
+    mkdir -p "$VM_CLOUD_INIT_DIR_MOUNTED"
+    EXIT_CODE=$?
+    if test $EXIT_CODE -ne 0
+    then
+        sudo umount "$VM_CLOUD_INIT_DIR"
+        exit 16
+    fi
+
+    cp -r "$VM_CLOUD_INIT_FILE_PATH" "$VM_CLOUD_INIT_FILE_MOUNTED"
+    EXIT_CODE=$?
+    if test $EXIT_CODE -ne 0
+    then
+        sudo umount "$VM_CLOUD_INIT_DIR"
+        exit 16
+    fi
+
+    echo "          OK copying $VM_CLOUD_INIT_FILE_PATH."
+done
+
+sudo umount "$VM_CLOUD_INIT_DIR" \
+    || exit 16
+
+echo "      OK creating cloud-init data disk."
 
 # ======================================================================
 
@@ -868,6 +982,9 @@ echo "    -display \"$VM_DISPLAY\" \\" \
 echo "    $VM_DISPLAY_OPTIONS \\" \
      >> "$VM_DIR/bin/start.sh" \
     || exit 17
+echo "    -machine $VM_MACHINE \\" \
+     >> "$VM_DIR/bin/start.sh" \
+    || exit 17
 echo "    -m $VM_MEMORY \\" \
      >> "$VM_DIR/bin/start.sh" \
     || exit 17
@@ -902,18 +1019,26 @@ echo ",net=$VM_CIDR,dhcpstart=$VM_IP_ADDRESS \\" \
 echo "    -device virtio-net-pci,netdev=net0,mac=$VM_MAC_ADDRESS \\" \
      >> "$VM_DIR/bin/start.sh" \
     || exit 17
+
 IS_FIRST_DISK=true
 for VM_DISK in $VM_DISKS
 do
-    echo "    -drive file=\"\$RUN_DIR/disks/disk_${VM_DISK}.qcow2,if=virtio,format=qcow2\" \\" \
+    echo "    -drive id=$VM_DISK,file=\$RUN_DIR/disks/disk_${VM_DISK}.qcow2,if=virtio,format=qcow2,cache=none \\" \
          >> "$VM_DIR/bin/start.sh" \
         || exit 17
     if test "$IS_FIRST_DISK" = "true"
     then
-        # cloud-init disk is second:
-        echo "    -drive file=\"\$RUN_DIR/disks/disk_cloud_config.img,if=virtio,format=raw\" \\" \
+        # /dev/vdb: cloud-init (user-data.yaml) disk is second:
+        echo "    -drive id=cloud_config,file=\$RUN_DIR/disks/disk_cloud_config.img,if=virtio,format=raw,cache=none \\" \
              >> "$VM_DIR/bin/start.sh" \
             || exit 17
+
+        # /dev/vdc: Mount all the scripts and data used by the
+        #           cloud-init user-data.yaml:
+        echo "    -drive id=cloud-init,file=\$RUN_DIR/disks/cloud-init.img,if=virtio,format=raw,cache=none \\" \
+             >> "$VM_DIR/bin/start.sh" \
+            || exit 17
+
         IS_FIRST_DISK=false
     fi
 done
