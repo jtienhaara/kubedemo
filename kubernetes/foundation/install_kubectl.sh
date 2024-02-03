@@ -2,6 +2,16 @@
 
 KUBECTL_VERSION=1.29.1
 
+#
+# kubectl download instructions are at:
+#
+#     https://kubernetes.io/docs/tasks/tools/#kubectl
+#
+# And the current stable release is referenced at:
+#
+#     https://dl.k8s.io/release/stable.txt
+#
+
 echo "Installing kubectl (\"cube cuddle\") version $KUBECTL_VERSION..."
 
 OS_KERNEL=`uname -s`
@@ -49,16 +59,6 @@ echo "  Checking sudo access:"
 sudo echo "  Granted sudo access." \
     || exit 1
 
-
-#
-# kubectl download instructions are at:
-#
-#     https://kubernetes.io/docs/tasks/tools/#kubectl
-#
-# And the current stable release is referenced at:
-#
-#     https://dl.k8s.io/release/stable.txt
-#
 KUBECTL_URL="https://dl.k8s.io/release/v${KUBECTL_VERSION}/bin/${KUBECTL_OS}/${KUBECTL_ARCHITECTURE}/kubectl"
 
 if test -f "./kubectl"

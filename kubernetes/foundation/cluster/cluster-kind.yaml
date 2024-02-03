@@ -1,0 +1,22 @@
+#
+# "kubedemo" cluster.
+# Our imaginary startup company uses services hosted in "the cloud",
+# such as a git web application (Gitea), chat / messaging (!!!),
+# project management (!!!), blog (!!!), email (!!!),
+# cloud storage (!!!), and a static website hosting service (!!!).
+#
+# NOTE: The size of the kind cluster appears to be limited by the size
+# of VM we run -- trying to add more worker nodes results in
+# kind / kubeadm failing to join the worker nodes to the cluster.
+# We've settled for a smaller cluster accordingly.
+#
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+name: "kubedemo"
+nodes:
+- role: control-plane
+#!!!- role: control-plane
+#!!!- role: control-plane
+- role: worker
+- role: worker
+- role: worker

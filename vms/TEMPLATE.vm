@@ -104,3 +104,8 @@ VM_CLOUD_INIT_RUN='os_setup_debian.sh check_or_shutdown.sh'
 # Data to tar up and copy into the VM during cloud-init (optional):
 #
 VM_CLOUD_INIT_DATA=''
+
+#
+# Script(s) to run as the VM_USER after the VM has booted up (optional):
+#
+VM_POST_BOOT_RUN=''

@@ -2,6 +2,11 @@
 
 echo "Installing docker.io..."
 
+#
+# The operating system's default apt version of Docker is installed
+# (e.g. Debian 12 / Bookworm).
+#
+
 echo "  Checking sudo access:"
 sudo echo "  Granted sudo access." \
     || exit 1

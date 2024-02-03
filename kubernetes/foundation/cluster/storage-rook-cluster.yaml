@@ -1,0 +1,316 @@
+#
+# This Rook/Ceph manifest is modified from:
+#
+#     https://github.com/rook/rook/blob/21a99f33b2970063575419b75c1a45f2a07d578c/deploy/examples/cluster-on-local-pvc.yaml
+#
+# The original is licensed under Apache 2.0:
+#
+#     https://github.com/rook/rook?tab=Apache-2.0-1-ov-file
+#
+# Changes made:
+#
+#     - The original is designed for a 3 physical node Kubernetes cluster.
+#       In that scenario, "/dev/sdb" and "/dev/sdc" on each physical node
+#       can be used for mon / osd volumes.  We run Rook/Ceph in kind,
+#       Docker containers, on a single virtual machine.  So we keep the
+#       disk devices separate, and use virtio's virtual disks.  If you
+#       want to modify this approach to run on multiple physical nodes,
+#       you'll need to assign /dev/xxx disks, below, appropriate
+#       to those nodes.  If you want to run on a single bare metal node,
+#       without a VM, then be cautious!  It's easy to accidentally blow
+#       away your disk(s) by misconfiguring Rook ("Always use a
+#       virtual machine when testing Rook. Never use your host system
+#       where local devices may mistakenly be consumed." - from
+#       https://rook.io/docs/rook/v1.9/quickstart.html#ceph-quickstart).
+#       Note that Rook
+#       deliberately and explicitly refuses to use loopback disk devices
+#       (so, for example, you can't use Docker Volumes with kind as your
+#       Rook backing storage).  There are workarounds, including
+#       running your Kubernetes cluster inside a VM with virtual disks
+#       (see, for example, https://github.com/rook/rook/issues/7206#issuecomment-926850862).
+#       The disks we use here, inside a kind cluster inside a VM, are:
+#           - /dev/vdd
+#           - /dev/vde
+#           - /dev/vdf
+#           - /dev/vdg
+#           - /dev/vdh
+#           - /dev/vdi
+#     - Reduce the size of each mon and osd backing volume from 10Gi to 1Gi.
+#     - Uncomment the OSD daemon limits and OSD prepare limits
+#       for resource consumption by Rook/Ceph Pods.
+#     - Renamed all "local*" resources to "kubedemo*".
+#     - Changed the nodeAffinity for each of the mon and osd PersistentVolumes
+#       from "host*" to control plane node names in the kind cluster,
+#       "kubedemo-worker", "kubedemo-worker2", etc.
+#       If you deploy a different type of Kubernetes cluster, you'll need
+#       to change the PersistentVolume nodeAffinity according to
+#       the node labels in your cluster.
+#     - Added missing useAllNodes and useAllDevices fields to CephCluster
+#       storage.
+#
+#################################################################################################################
+# Define the settings for the rook-ceph cluster with common settings for a production cluster on top of bare metal.
+
+# This example expects three nodes, each with two available disks. Please modify it according to your environment.
+# See the documentation for more details on storage settings available.
+
+# For example, to create the cluster:
+#   kubectl create -f crds.yaml -f common.yaml -f operator.yaml
+#   kubectl create -f cluster-on-local-pvc.yaml
+#################################################################################################################
+kind: StorageClass
+apiVersion: storage.k8s.io/v1
+metadata:
+  name: rook-storage
+provisioner: kubernetes.io/no-provisioner
+volumeBindingMode: WaitForFirstConsumer
+---
+kind: PersistentVolume
+apiVersion: v1
+metadata:
+  name: kubedemo0-0
+spec:
+  storageClassName: rook-storage
+  capacity:
+    storage: 1Gi
+  accessModes:
+    - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Retain
+  # PV for mon must be a filesystem volume.
+  volumeMode: Filesystem
+  local:
+    # If you want to use dm devices like logical volume, please replace `/dev/vdd` with their device names like `/dev/vg-name/lv-name`.
+    path: /dev/vdd
+  nodeAffinity:
+    required:
+      nodeSelectorTerms:
+        - matchExpressions:
+            - key: kubernetes.io/hostname
+              operator: In
+              values:
+                - kubedemo-worker
+---
+kind: PersistentVolume
+apiVersion: v1
+metadata:
+  name: kubedemo0-1
+spec:
+  storageClassName: rook-storage
+  capacity:
+    storage: 1Gi
+  accessModes:
+    - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Retain
+  # PV for OSD must be a block volume.
+  volumeMode: Block
+  local:
+    path: /dev/vde
+  nodeAffinity:
+    required:
+      nodeSelectorTerms:
+        - matchExpressions:
+            - key: kubernetes.io/hostname
+              operator: In
+              values:
+                - kubedemo-worker
+---
+kind: PersistentVolume
+apiVersion: v1
+metadata:
+  name: kubedemo1-0
+spec:
+  storageClassName: rook-storage
+  capacity:
+    storage: 1Gi
+  accessModes:
+    - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Retain
+  volumeMode: Filesystem
+  local:
+    path: /dev/vdf
+  nodeAffinity:
+    required:
+      nodeSelectorTerms:
+        - matchExpressions:
+            - key: kubernetes.io/hostname
+              operator: In
+              values:
+                - kubedemo-worker2
+---
+kind: PersistentVolume
+apiVersion: v1
+metadata:
+  name: kubedemo1-1
+spec:
+  storageClassName: rook-storage
+  capacity:
+    storage: 1Gi
+  accessModes:
+    - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Retain
+  volumeMode: Block
+  local:
+    path: /dev/vdg
+  nodeAffinity:
+    required:
+      nodeSelectorTerms:
+        - matchExpressions:
+            - key: kubernetes.io/hostname
+              operator: In
+              values:
+                - kubedemo-worker2
+---
+kind: PersistentVolume
+apiVersion: v1
+metadata:
+  name: kubedemo2-0
+spec:
+  storageClassName: rook-storage
+  capacity:
+    storage: 1Gi
+  accessModes:
+    - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Retain
+  volumeMode: Filesystem
+  local:
+    path: /dev/vdh
+  nodeAffinity:
+    required:
+      nodeSelectorTerms:
+        - matchExpressions:
+            - key: kubernetes.io/hostname
+              operator: In
+              values:
+                - kubedemo-worker3
+---
+kind: PersistentVolume
+apiVersion: v1
+metadata:
+  name: kubedemo2-1
+spec:
+  storageClassName: rook-storage
+  capacity:
+    storage: 1Gi
+  accessModes:
+    - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Retain
+  volumeMode: Block
+  local:
+    path: /dev/vdi
+  nodeAffinity:
+    required:
+      nodeSelectorTerms:
+        - matchExpressions:
+            - key: kubernetes.io/hostname
+              operator: In
+              values:
+                - kubedemo-worker3
+---
+apiVersion: ceph.rook.io/v1
+kind: CephCluster
+metadata:
+  name: rook-ceph
+  namespace: rook-ceph # namespace:cluster
+spec:
+  dataDirHostPath: /var/lib/rook
+  mon:
+    count: 3
+    allowMultiplePerNode: false
+    volumeClaimTemplate:
+      spec:
+        storageClassName: rook-storage
+        resources:
+          requests:
+            storage: 1Gi
+  cephVersion:
+    image: quay.io/ceph/ceph:v18.2.1
+    allowUnsupported: false
+  skipUpgradeChecks: false
+  continueUpgradeAfterChecksEvenIfNotHealthy: false
+  mgr:
+    count: 1
+    modules:
+      - name: pg_autoscaler
+        enabled: true
+  dashboard:
+    enabled: true
+    ssl: true
+  crashCollector:
+    disable: false
+  storage:
+    storageClassDeviceSets:
+      - name: set1
+        count: 3
+        portable: false
+        tuneDeviceClass: true
+        tuneFastDeviceClass: false
+        encrypted: false
+        placement:
+          topologySpreadConstraints:
+            - maxSkew: 1
+              topologyKey: kubernetes.io/hostname
+              whenUnsatisfiable: ScheduleAnyway
+              labelSelector:
+                matchExpressions:
+                  - key: app
+                    operator: In
+                    values:
+                      - rook-ceph-osd
+                      - rook-ceph-osd-prepare
+        preparePlacement:
+          podAntiAffinity:
+            preferredDuringSchedulingIgnoredDuringExecution:
+              - weight: 100
+                podAffinityTerm:
+                  labelSelector:
+                    matchExpressions:
+                      - key: app
+                        operator: In
+                        values:
+                          - rook-ceph-osd
+                      - key: app
+                        operator: In
+                        values:
+                          - rook-ceph-osd-prepare
+                  topologyKey: kubernetes.io/hostname
+        resources:
+        # These are the OSD daemon limits. For OSD prepare limits, see the separate section below for "prepareosd" resources
+          limits:
+            cpu: "500m"
+            memory: "4Gi"
+          requests:
+            cpu: "500m"
+            memory: "4Gi"
+        volumeClaimTemplates:
+          - metadata:
+              name: data
+              # if you are looking at giving your OSD a different CRUSH device class than the one detected by Ceph
+              # annotations:
+              #   crushDeviceClass: hybrid
+            spec:
+              resources:
+                requests:
+                  storage: 1Gi
+              # IMPORTANT: Change the storage class depending on your environment
+              storageClassName: rook-storage
+              volumeMode: Block
+              accessModes:
+                - ReadWriteOnce
+    # when onlyApplyOSDPlacement is false, will merge both placement.All() and storageClassDeviceSets.Placement
+    onlyApplyOSDPlacement: false
+  resources:
+    prepareosd:
+      limits:
+        cpu: "200m"
+        memory: "200Mi"
+      requests:
+        cpu: "200m"
+        memory: "200Mi"
+  priorityClassNames:
+    mon: system-node-critical
+    osd: system-node-critical
+    mgr: system-cluster-critical
+  disruptionManagement:
+    managePodBudgets: true
+    osdMaintenanceTimeout: 30
+    pgHealthCheckTimeout: 0

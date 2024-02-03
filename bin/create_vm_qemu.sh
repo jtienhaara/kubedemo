@@ -356,6 +356,7 @@ fi
 
 # VM_CLOUD_INIT_RUN can be empty.
 # VM_CLOUD_INIT_DATA can be empty.
+# VM_POST_BOOT_RUN can be empty.
 
 echo "    Checking VM_DISK_*_* settings:"
 for VM_DISK in $VM_DISKS
@@ -472,6 +473,39 @@ then
         VM_CLOUD_INIT_DATA_FILES="$NEW_VM_CLOUD_INIT_DATA_FILES"
 
         echo "      OK $VM_CLOUD_INIT_DATA_PATH"
+    done
+fi
+
+VM_POST_BOOT_SCRIPTS=""
+if test ! -z "$VM_POST_BOOT_RUN"
+then
+    echo "    Checking VM_POST_BOOT_RUN script(s): $VM_POST_BOOT_RUN"
+    for VM_POST_BOOT_SCRIPT in $VM_POST_BOOT_RUN
+    do
+        VM_POST_BOOT_SCRIPT_PATH=""
+        VM_POST_BOOT_SCRIPT_MOUNTED=""
+
+        if test -e "$VM_PARENT_DIR/$VM_POST_BOOT_SCRIPT"
+        then
+            # Relative path:
+            VM_POST_BOOT_SCRIPT_PATH="$VM_PARENT_DIR/$VM_POST_BOOT_SCRIPT"
+            VM_POST_BOOT_SCRIPT_MOUNTED="/cloud-init/$VM_RELATIVE_PARENT_DIR/$VM_POST_BOOT_SCRIPT"
+        else
+            # Absolute path?
+            if test -e "/$VM_POST_BOOT_SCRIPT"
+            then
+                VM_POST_BOOT_SCRIPT_PATH="/$VM_POST_BOOT_SCRIPT"
+                VM_POST_BOOT_SCRIPT_MOUNTED="/cloud-init/$VM_POST_BOOT_SCRIPT"
+            else
+                echo "ERROR Could not find cloud-init script in (/ $VM_PARENT_DIR): $VM_POST_BOOT_SCRIPT" >&2
+                exit 8
+            fi
+        fi
+
+        NEW_VM_POST_BOOT_SCRIPTS="$VM_POST_BOOT_SCRIPTS $VM_POST_BOOT_SCRIPT_MOUNTED"
+        VM_POST_BOOT_SCRIPTS="$NEW_VM_POST_BOOT_SCRIPTS"
+
+        echo "      OK $VM_POST_BOOT_SCRIPT_PATH"
     done
 fi
 
@@ -621,18 +655,26 @@ runcmd:
   - echo "======================================================================"
   - echo "VM $VM_NAME environment setup:"
   - echo "export VM_NAME=\"$VM_NAME\"" >> /root/.bashrc
-  - echo "export export VM_USER=\"$VM_USER\"" >> /root/.bashrc
-  - echo "export export VM_GROUP=\"$VM_GROUP\"" >> /root/.bashrc
-  - echo "export export VM_PORTS=\"$VM_PORTS\"" >> /root/.bashrc
-  - echo "export export VM_DISKS=\"$VM_DISKS\"" >> /root/.bashrc
+  - echo "export VM_USER=\"$VM_USER\"" >> /root/.bashrc
+  - echo "export VM_GROUP=\"$VM_GROUP\"" >> /root/.bashrc
+  - echo "export VM_PORTS=\"$VM_PORTS\"" >> /root/.bashrc
+  - echo "export VM_DISKS=\"$VM_DISKS\"" >> /root/.bashrc
   - . /root/.bashrc
   - while test ! -d /home/$VM_USER; do echo "Waiting 5 seconds for user $VM_USER home directory to be created..."; sleep 5; done
   # 128 bit random password:
   - head --bytes 16 /dev/urandom | base64 --wrap 0 | sed 's|^\\(.*\\)\$|$VM_USER:\\1|' | chpasswd || ( echo "***** FAILED to chpasswd $VM_USER *****" >&2 ; shutdown -h now )
+  - echo "export VM_NAME=\"$VM_NAME\"" >> /home/$VM_USER/.bashrc
+  - echo "export VM_USER=\"$VM_USER\"" >> /home/$VM_USER/.bashrc
+  - echo "export VM_GROUP=\"$VM_GROUP\"" >> /home/$VM_USER/.bashrc
+  - echo "export VM_PORTS=\"$VM_PORTS\"" >> /home/$VM_USER/.bashrc
+  - echo "export VM_DISKS=\"$VM_DISKS\"" >> /home/$VM_USER/.bashrc
+  - chown $VM_USER:$VM_GROUP /home/$VM_USER/.bashrc || ( echo "***** FAILED to chown $VM_USER:$VM_GROUP /home/$VM_USER/.bashrc *****" >&2 ; shutdown -h now )
   - echo "Mounting /cloud-init:"
   - mkdir -p /cloud-init
-  - mount -t ext4 /dev/vdc /cloud-init
-  - chown -R $VM_USER:$VM_GROUP /cloud-init/
+  # Always mount /cloud-init at bootup:
+  - echo "/dev/vdc /cloud-init ext4 rw,relatime 0 0" >> /etc/fstab || ( echo "***** FAILED to modify /etc/fstab with /cloud-init/ mount options *****" >&2 ; shutdown -h now )
+  - mount /cloud-init || ( echo "***** FAILED to mount /cloud-init/ *****" >&2 ; shutdown -h now )
+  - chown -R $VM_USER:$VM_GROUP /cloud-init/ || ( echo "***** FAILED to chown $VM_USER /cloud-init/ *****" >&2 ; shutdown -h now )
   - echo "SUCCESS Mounting /cloud-init."
   - echo "----------------------------------------------------------------------"
 END_OF_CLOUD_CONFIG
@@ -883,10 +925,37 @@ echo "#!/bin/sh" \
 echo "" \
      >> "$VM_DIR/bin/ssh.sh" \
     || exit 17
-echo "ssh -p $VM_SSH_PORT -i $VM_DIR/ssh.key $VM_USER@localhost \$@" \
+echo "ssh -p $VM_SSH_PORT -i $VM_DIR/ssh.key -o StrictHostKeyChecking=accept-new $VM_USER@localhost \$@" \
      >> "$VM_DIR/bin/ssh.sh" \
     || exit 17
 echo "EXIT_CODE=\$?" \
+     >> "$VM_DIR/bin/ssh.sh" \
+    || exit 17
+echo "if test \$EXIT_CODE -ne 0" \
+     >> "$VM_DIR/bin/ssh.sh" \
+    || exit 17
+echo "then" \
+     >> "$VM_DIR/bin/ssh.sh" \
+    || exit 17
+echo "    # Remove any previous keys:" \
+     >> "$VM_DIR/bin/ssh.sh" \
+    || exit 17
+echo "    ssh-keygen -f \"\$HOME/.ssh/known_hosts\" -R \"[localhost]:$VM_SSH_PORT\"" \
+     >> "$VM_DIR/bin/ssh.sh" \
+    || exit 17
+echo "" \
+     >> "$VM_DIR/bin/ssh.sh" \
+    || exit 17
+echo "    # Now try again:" \
+     >> "$VM_DIR/bin/ssh.sh" \
+    || exit 17
+echo "    ssh -p $VM_SSH_PORT -i $VM_DIR/ssh.key -o StrictHostKeyChecking=accept-new $VM_USER@localhost \$@" \
+     >> "$VM_DIR/bin/ssh.sh" \
+    || exit 17
+echo "    EXIT_CODE=\$?" \
+     >> "$VM_DIR/bin/ssh.sh" \
+    || exit 17
+echo "fi" \
      >> "$VM_DIR/bin/ssh.sh" \
     || exit 17
 echo "" \
@@ -903,6 +972,42 @@ echo "  Copying $VM_FILE to $VM_DIR/settings.vm:"
 cp -f "$VM_FILE" "$VM_DIR/settings.vm" \
     || exit 17
 echo "    OK $VM_DIR/settings.vm"
+
+echo "  Creating $VM_DIR/bin/post_boot.sh, called by start.sh..."
+echo "#!/bin/sh" \
+     > "$VM_DIR/bin/post_boot.sh" \
+    || exit 17
+echo "" \
+     >> "$VM_DIR/bin/post_boot.sh" \
+    || exit 17
+echo "BIN_DIR=\`dirname \$0\`" \
+     >> "$VM_DIR/bin/post_boot.sh" \
+    || exit 17
+echo "RUN_DIR=\`dirname \$BIN_DIR\`" \
+     >> "$VM_DIR/bin/post_boot.sh" \
+    || exit 17
+echo "echo \"Executing post-boot scripts...\"" \
+     >> "$VM_DIR/bin/post_boot.sh" \
+    || exit 17
+for VM_POST_BOOT_SCRIPT in $VM_POST_BOOT_SCRIPTS
+do
+    echo "echo \"  Executing \"$VM_POST_BOOT_SCRIPT\":\"" \
+         >> "$VM_DIR/bin/post_boot.sh" \
+        || exit 17
+    echo "\$RUN_DIR/bin/ssh.sh $VM_POST_BOOT_SCRIPT || exit 1" \
+         >> "$VM_DIR/bin/post_boot.sh" \
+        || exit 17
+done
+echo "echo \"SUCCESSExecuting post-boot scripts.\"" \
+     >> "$VM_DIR/bin/post_boot.sh" \
+    || exit 17
+echo "exit 0" \
+     >> "$VM_DIR/bin/post_boot.sh" \
+    || exit 17
+chmod u+x,go-rwx "$VM_DIR/bin/post_boot.sh" \
+    || exit 17
+echo "    OK $VM_DIR/bin/post_boot.sh"
+
 
 echo "  Creating $VM_DIR/bin/start.sh, $VM_DIR/bin/stop.sh and $VM_DIR/bin/kill.sh..."
 
@@ -1062,6 +1167,18 @@ echo "" \
      >> "$VM_DIR/bin/start.sh" \
     || exit 17
 echo "echo \"    tail -f \$RUN_DIR/log/serial.log\"" \
+     >> "$VM_DIR/bin/start.sh" \
+    || exit 17
+echo "" \
+     >> "$VM_DIR/bin/start.sh" \
+    || exit 17
+echo "echo \"You can run post-boot scripts with:\"" \
+     >> "$VM_DIR/bin/start.sh" \
+    || exit 17
+echo "" \
+     >> "$VM_DIR/bin/start.sh" \
+    || exit 17
+echo "echo \"    $VM_DIR/bin/post_boot.sh\"" \
      >> "$VM_DIR/bin/start.sh" \
     || exit 17
 echo "" \

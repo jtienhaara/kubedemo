@@ -2,6 +2,16 @@
 
 KUSTOMIZE_VERSION=5.3.0
 
+#
+# kustomize download instructions are at:
+#
+#     https://kubectl.docs.kubernetes.io/installation/kustomize/
+#
+# And the releases are listed at:
+#
+#     https://github.com/kubernetes-sigs/kustomize/releases
+#
+
 echo "Installing kustomize version $KUSTOMIZE_VERSION..."
 
 OS_KERNEL=`uname -s`
@@ -49,16 +59,6 @@ echo "  Checking sudo access:"
 sudo echo "  Granted sudo access." \
     || exit 1
 
-
-#
-# kustomize download instructions are at:
-#
-#     https://kubectl.docs.kubernetes.io/installation/kustomize/
-#
-# And the releases are listed at:
-#
-#     https://github.com/kubernetes-sigs/kustomize/releases
-#
 KUSTOMIZE_URL="https://github.com/kubernetes-sigs/kustomize/releases/download/kustomize%2Fv${KUSTOMIZE_VERSION}/kustomize_v${KUSTOMIZE_VERSION}_${KUSTOMIZE_OS}_${KUSTOMIZE_ARCHITECTURE}.tar.gz"
 
 if test -f "./kustomize" \

@@ -27,7 +27,7 @@ VM_ARCHITECTURE='x86_64'
 #
 # Memory:
 #
-VM_MEMORY='8G'
+VM_MEMORY='24G'
 
 #
 # Network:
@@ -92,15 +92,20 @@ VM_DISK_osd3_SIZE='1G'
 #
 # User and identity:
 #
-VM_USER='k8scanada'
+VM_USER='kubedemo'
 VM_GROUP='TEMPLATE'
 
 #
 # Cloud-init scripts to run at first boot (optional):
 #
-VM_CLOUD_INIT_RUN='os_setup_debian.sh ../kubernetes/install_foundation.sh check_or_shutdown.sh'
+VM_CLOUD_INIT_RUN='os_setup_debian.sh check_or_shutdown.sh'
 
 #
 # Data to tar up and copy into the VM during cloud-init (optional):
 #
-VM_CLOUD_INIT_DATA='../kubernetes/foundation'
+VM_CLOUD_INIT_DATA='../kubernetes'
+
+#
+# Script(s) to run as the VM_USER after the VM has booted up (optional):
+#
+VM_POST_BOOT_RUN='../kubernetes/install_foundation.sh '

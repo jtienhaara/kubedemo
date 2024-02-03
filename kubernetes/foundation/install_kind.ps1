@@ -1,6 +1,6 @@
 # WARNING I have not tested this script.  User discretion is advised.
 
-$KIND_VERSION = "0.20.0"
+$KIND_VERSION = "0.21.0"
 
 # Download kind from k8s.io:
 curl.exe --location --output kind-windows-amd64.exe https://kind.sigs.k8s.io/dl/v$KIND_VERSION/kind-windows-amd64
