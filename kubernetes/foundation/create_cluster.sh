@@ -57,7 +57,7 @@ do
             echo "$KUBERNETES_READY" \
                 | sed 's|^\(.*\)$|      \1|'
         else
-            echo "      ..."
+            echo "      ... ($TOTAL_SECONDS s / $MAX_SECONDS s)"
         fi
         sleep $SLEEP_SECONDS
         NEW_TOTAL_SECONDS=`expr $TOTAL_SECONDS + $SLEEP_SECONDS`

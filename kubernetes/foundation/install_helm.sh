@@ -56,19 +56,37 @@ sudo echo "  Granted sudo access." \
 
 HELM_URL="https://get.helm.sh/helm-v${HELM_VERSION}-${HELM_OS}-${HELM_ARCHITECTURE}.tar.gz"
 
-if test -f "./helm"
+if test -d "./helm" \
+        -o -f "./helm.tar.gz"
 then
     echo "  Deleting existing helm download:"
-    rm -f ./helm \
+    rm -rf ./helm ./helm.tar.gz \
         || exit 2
 fi
 
 echo "  Downloading helm from $HELM_URL:"
-curl --location --fail-with-body --output ./helm "$HELM_URL" \
+curl --location --fail-with-body --output ./helm.tar.gz "$HELM_URL" \
     || exit 3
 
-echo "  Moving helm to /usr/local/bin/:"
-sudo mv ./helm /usr/local/bin/ \
+echo "  Extracting helm from helm.tar.gz:"
+mkdir -p ./helm \
+    || exit 4
+OLD_PWD=`pwd`
+cd ./helm \
+    || exit 4
+tar xzf ../helm.tar.gz \
+    || exit 4
+cd "$OLD_PWD" \
+    || exit 4
+HELM_EXECUTABLE=`find ./helm/ -type f -name 'helm'`
+if test $? -ne 0 \
+        -o -z "$HELM_EXECUTABLE"
+then
+    exit 4
+fi
+
+echo "  Copying helm to /usr/local/bin/:"
+sudo cp "$HELM_EXECUTABLE" /usr/local/bin/ \
     || exit 4
 
 echo "  Making helm executable by all:"

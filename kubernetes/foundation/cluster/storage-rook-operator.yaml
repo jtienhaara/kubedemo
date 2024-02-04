@@ -9,6 +9,8 @@
 #
 # The following changes have been made to the original:
 #
+#     - Changed operator image from "master" to v1.13.3
+#       (https://github.com/rook/rook/releases/tag/v1.13.3)
 #
 #################################################################################################################
 # The deployment for the rook operator
@@ -636,7 +638,7 @@ spec:
       serviceAccountName: rook-ceph-system
       containers:
         - name: rook-ceph-operator
-          image: rook/ceph:master
+          image: rook/ceph:v1.13.3
           args: ["ceph", "operator"]
           securityContext:
             runAsNonRoot: true

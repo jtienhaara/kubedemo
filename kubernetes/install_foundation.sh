@@ -26,14 +26,22 @@ echo "    Installing kustomize:"
 sudo $RUN_DIR/foundation/install_kustomize.sh \
     || exit 2
 
+echo "    Installing helm:"
+sudo $RUN_DIR/foundation/install_helm.sh \
+    || exit 2
+
 echo "  Creating cluster:"
 
 echo "    Creating \"kubedemo\" cluster:"
 $RUN_DIR/foundation/create_cluster.sh \
     || exit 3
 
-echo "    Applying foundation components to \"kubedemo\" cluster:"
-$RUN_DIR/foundation/apply_cluster.sh \
+echo "    Applying storage (Rook/Ceph) to \"kubedemo\" cluster:"
+$RUN_DIR/foundation/apply_storage.sh \
+    || exit 3
+
+echo "    Applying secrets (HashiCorp Vault) to \"kubedemo\" cluster:"
+$RUN_DIR/foundation/apply_secrets.sh \
     || exit 3
 
 echo "SUCCESS Installing the foundation for a Kubernetes demo."
