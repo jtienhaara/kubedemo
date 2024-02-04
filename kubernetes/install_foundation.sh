@@ -26,10 +26,14 @@ echo "    Installing kustomize:"
 sudo $RUN_DIR/foundation/install_kustomize.sh \
     || exit 2
 
-echo "  Creating infrastructure:"
+echo "  Creating cluster:"
 
 echo "    Creating \"kubedemo\" cluster:"
 $RUN_DIR/foundation/create_cluster.sh \
+    || exit 3
+
+echo "    Applying foundation components to \"kubedemo\" cluster:"
+$RUN_DIR/foundation/apply_cluster.sh \
     || exit 3
 
 echo "SUCCESS Installing the foundation for a Kubernetes demo."
