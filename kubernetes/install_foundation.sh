@@ -40,6 +40,10 @@ echo "    Applying storage (Rook/Ceph) to \"kubedemo\" cluster:"
 $RUN_DIR/foundation/apply_storage.sh \
     || exit 3
 
+echo "    Applying observability (kube-prometheus) to \"kubedemo\" cluster:"
+$RUN_DIR/foundation/apply_observability.sh \
+    || exit 3
+
 echo "    Applying secrets (HashiCorp Vault) to \"kubedemo\" cluster:"
 $RUN_DIR/foundation/apply_secrets.sh \
     || exit 3

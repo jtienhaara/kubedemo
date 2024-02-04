@@ -813,8 +813,9 @@ echo "      OK creating empty disk(s)."
 echo "    Creating cloud-init disk:"
 VM_CLOUD_INIT_DIR="$VM_DIR/disks/cloud-init"
 VM_CLOUD_INIT_DISK="$VM_DIR/disks/cloud-init.img"
-# Enough room for metadata; we'll expand the # of bytes for scripts, data files:
-VM_CLOUD_INIT_BYTES=524288
+# Enough room for metadata plus wiggle room once it's mounted in the VM;
+# we'll expand the # of bytes for scripts, data files:
+VM_CLOUD_INIT_BYTES=4194304
 
 for VM_CLOUD_INIT_FILE in $VM_CLOUD_INIT_SCRIPTS $VM_CLOUD_INIT_DATA_FILES
 do
@@ -833,6 +834,13 @@ do
     NEW_VM_CLOUD_INIT_BYTES=`expr $VM_CLOUD_INIT_BYTES + $VM_CLOUD_INIT_FILE_BYTES`
     VM_CLOUD_INIT_BYTES="$NEW_VM_CLOUD_INIT_BYTES"
 done
+
+#
+# Now double the number of bytes for the disk, since metadata since
+# to take up a lot of space:
+#
+NEW_VM_CLOUD_INIT_BYTES=`expr $VM_CLOUD_INIT_BYTES \* 2`
+VM_CLOUD_INIT_BYTES=$NEW_VM_CLOUD_INIT_BYTES
 
 echo "      Creating cloud-init disk image ($VM_CLOUD_INIT_BYTES bytes):"
 dd if=/dev/zero of=$VM_CLOUD_INIT_DISK bs=1 \
