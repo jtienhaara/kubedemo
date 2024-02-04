@@ -43,6 +43,13 @@
 #
 #     https://thenewstack.io/meet-openbao-an-open-source-fork-of-hashicorp-vault/
 #
+# The Kubernetes secrets store CSI driver 1.4.1 is available at:
+#
+#     https://github.com/kubernetes-sigs/secrets-store-csi-driver/releases
+#     https://secrets-store-csi-driver.sigs.k8s.io/getting-started/installation.html
+#     https://secrets-store-csi-driver.sigs.k8s.io/topics/best-practices
+#     https://github.com/kubernetes-sigs/secrets-store-csi-driver/tree/main/charts/secrets-store-csi-driver#configuration
+#
 # HashiCorp Vault 1.14.0 is licensed under the Mozilla Public License 2.0:
 #
 #     https://github.com/hashicorp/vault/blob/v1.14.0/LICENSE
@@ -56,17 +63,39 @@
 #
 #     https://github.com/hashicorp/vault-csi-provider/blob/v1.4.1/LICENSE
 #
+# The Kubernetes secrets store CSI driver is licensed under the Apache 2.0
+# license:
+#
+#     https://github.com/kubernetes-sigs/secrets-store-csi-driver/blob/v1.4.1/LICENSE
+#
 VAULT_HELM_VERSION=0.25.0
 VAULT_VERSION=1.14.0
 VAULT_CSI_VERSION=1.4.1
+
+CSI_DRIVER_HELM_VERSION=1.4.1
 
 echo "Installing secrets (HashiCorp Vault)..."
 
 CLUSTER_DIR=/cloud-init/kubernetes/foundation/cluster
 KUBECONFIG=$HOME/.kube/kubeconfig-kubedemo.yaml
 
+echo "  Adding secrets store CSI driver Helm repo:"
+helm repo add secrets-store-csi-driver \
+     https://kubernetes-sigs.github.io/secrets-store-csi-driver/charts \
+     --kubeconfig $KUBECONFIG \
+    || exit 1
+
+echo "  Helm installing secrets store CSI driver:"
+helm upgrade --install csi-secrets-store \
+     secrets-store-csi-driver/secrets-store-csi-driver \
+     --version $CSI_DRIVER_HELM_VERSION \
+     --namespace kube-system \
+     --kubeconfig $KUBECONFIG \
+    || exit 1
+
 echo "  Adding HashiCorp Helm repo:"
-helm repo add hashicorp https://helm.releases.hashicorp.com \
+helm repo add hashicorp \
+     https://helm.releases.hashicorp.com \
      --kubeconfig $KUBECONFIG \
     || exit 1
 
@@ -77,9 +106,9 @@ kubectl apply \
     || exit 1
 
 echo "  Helm installing HashiCorp Vault:"
-helm install vault hashicorp/vault \
+helm upgrade --install vault hashicorp/vault \
      --version $VAULT_HELM_VERSION \
-     !!! values!!!
+     --values $CLUSTER_DIR/secrets-vault-values.yaml \
      --namespace vault \
      --kubeconfig $KUBECONFIG \
     || exit 1

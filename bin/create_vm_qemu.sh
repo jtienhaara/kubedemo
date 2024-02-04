@@ -925,13 +925,25 @@ echo "#!/bin/sh" \
 echo "" \
      >> "$VM_DIR/bin/ssh.sh" \
     || exit 17
+echo "SSH_START_TIME=\`date '+%s'\`" \
+     >> "$VM_DIR/bin/ssh.sh" \
+    || exit 17
 echo "ssh -p $VM_SSH_PORT -i $VM_DIR/ssh.key -o StrictHostKeyChecking=accept-new $VM_USER@localhost \$@" \
      >> "$VM_DIR/bin/ssh.sh" \
     || exit 17
 echo "EXIT_CODE=\$?" \
      >> "$VM_DIR/bin/ssh.sh" \
     || exit 17
-echo "if test \$EXIT_CODE -ne 0" \
+echo "SSH_END_TIME=\`date '+%s'\`" \
+     >> "$VM_DIR/bin/ssh.sh" \
+    || exit 17
+echo "SSH_DIFF_TIME=\`expr \$SSH_END_TIME - \$SSH_START_TIME\`" \
+     >> "$VM_DIR/bin/ssh.sh" \
+    || exit 17
+echo "if test \$EXIT_CODE -ne 0 \\" \
+     >> "$VM_DIR/bin/ssh.sh" \
+    || exit 17
+echo "    -a \$SSH_DIFF_TIME -le 1" \
      >> "$VM_DIR/bin/ssh.sh" \
     || exit 17
 echo "then" \
