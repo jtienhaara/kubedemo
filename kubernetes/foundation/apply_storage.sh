@@ -3,6 +3,19 @@
 #
 # Rook/Ceph for storage.
 #
+# Version 1.13.3 from:
+#
+#     https://github.com/rook/rook/releases
+#
+# (Note that cluster/storage-rook-operator.yaml explicitly mentions
+# the version number, to pull down the appropriate version of the
+# Rook operator; but the other cluster/storage-rook-*.yaml manifests
+# might need to change, too, as new versions of Rook are released.)
+#
+# This version of Rook/Ceph is supported on version 1.29 of Kubernetes:
+#
+#     https://rook.io/docs/rook/latest-release/Getting-Started/quickstart/#kubernetes-version
+#
 echo "Installing storage (Rook/Ceph)..."
 
 CLUSTER_DIR=/cloud-init/kubernetes/foundation/cluster

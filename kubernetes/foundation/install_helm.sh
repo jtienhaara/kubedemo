@@ -1,5 +1,10 @@
 #!/bin/sh
 
+#
+# Source:
+#
+#     https://developer.hashicorp.com/vault/docs/platform/k8s/helm
+#
 HELM_VERSION=3.14.0
 
 #
