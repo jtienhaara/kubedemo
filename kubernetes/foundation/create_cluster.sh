@@ -17,14 +17,6 @@ echo "  Ensuring ~/.kube directory:"
 mkdir -p ~/.kube \
     || exit 1
 
-echo "  Increasing ulimit / NOFILES to 65536 for kind / Docker:"
-sudo sed -i.ORIGINAL \
-     's|^#DefaultLimitNOFILE=.*$|DefaultLimitNOFILE=65536:524288|' \
-     /etc/systemd/system.conf \
-    || exit 1
-ulimit -n 65536 \
-    || exit 1
-
 echo "  Creating \"kubedemo\" kind cluster ($KUBECONFIG):"
 kind create cluster \
      --config $CLUSTER_DIR/cluster-kind.yaml \

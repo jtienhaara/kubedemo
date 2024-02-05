@@ -1,22 +1,54 @@
 #
 # "kubedemo" cluster.
-# Our imaginary startup company uses services hosted in "the cloud",
-# such as a git web application (Gitea), chat / messaging (!!!),
-# project management (!!!), blog (!!!), email (!!!),
-# cloud storage (!!!), and a static website hosting service (!!!).
 #
 # NOTE: The size of the kind cluster appears to be limited by the size
-# of VM we run -- trying to add more worker nodes results in
+# of VM we run -- trying to add more control plane nodes results in
 # kind / kubeadm failing to join the worker nodes to the cluster.
-# We've settled for a smaller cluster accordingly.
+# We've settled for a smaller, non-high-availability control plane accordingly.
+#
+#
+# Without mounting the host VM's /sys/... pseudo-filesystem,
+# rook/ceph cannot write to /sys/bus/rbd/..., so we can't mount
+# or write to block persistent volumes created by Rook/Ceph.
+# Gory details:
+#
+#     https://github.com/kubernetes-sigs/kind/issues/745#issuecomment-516920036
+#     https://groups.google.com/g/coreos-user/c/d-ySGISJjjc
+#     https://tracker.ceph.com/issues/9355#note-7
+#
+# Mounting /sys/bus and /dev into the kind Node containers is a horribly
+# insecure and dangerous thing to do.  We're counting on the
+# fact that this kind cluster will only ever be created inside a sandbox
+# virtual machine!  Mounting a bare metal Linux system's /sys/bus and /dev
+# file systems, or a non-sandbox VM's, is a really bad idea and you shouldn't
+# do it.
+#
+# Maybe some day, someone will figure out some brilliant and secure way of
+# containerizing /sys, /dev, etc...  Or creating an rbd block device
+# without access to either file system.  It'd sure be nice to be able to
+# create an rbd block store inside an isolated, unprivileged container space.
+# (Cue kernel developers scoffing at the whole concept.)
 #
 kind: Cluster
 apiVersion: kind.x-k8s.io/v1alpha4
 name: "kubedemo"
 nodes:
 - role: control-plane
-#!!!- role: control-plane
-#!!!- role: control-plane
 - role: worker
+  extraMounts:
+  - hostPath: /sys/bus
+    containerPath: /sys/bus
+  - hostPath: /dev
+    containerPath: /dev
 - role: worker
+  extraMounts:
+  - hostPath: /sys/bus
+    containerPath: /sys/bus
+  - hostPath: /dev
+    containerPath: /dev
 - role: worker
+  extraMounts:
+  - hostPath: /sys/bus
+    containerPath: /sys/bus
+  - hostPath: /dev
+    containerPath: /dev
