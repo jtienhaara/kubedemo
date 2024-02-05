@@ -97,7 +97,7 @@ done
 
 if test $TOTAL_SECONDS -ge $MAX_SECONDS
 then
-    echo "ERROR Kubernetes still isn't ready after $TOTAL_SECONDS" >&2
+    echo "ERROR Rook/Ceph still isn't ready after $TOTAL_SECONDS" >&2
     exit 1
 fi
 
