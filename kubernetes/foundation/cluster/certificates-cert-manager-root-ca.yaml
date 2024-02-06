@@ -43,7 +43,6 @@ spec:
     size: 256
   issuerRef:
     name: kubedemo-root-issuer
-    namespace: cert-manager
     kind: Issuer
     group: cert-manager.io
 ---

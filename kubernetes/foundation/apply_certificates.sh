@@ -59,7 +59,7 @@ do
                                | wc -l \
                                2>&1`
     if test $? -ne 0 \
-            -o "$NUM_DEPLOYMENTS_READY" != "3"
+            -o $NUM_DEPLOYMENTS_READY -lt 3
     then
         if test $TOTAL_SECONDS -eq 0
         then
@@ -103,7 +103,7 @@ helm upgrade --install trust-manager jetstack/trust-manager \
      --kubeconfig $KUBECONFIG \
     || exit 1
 
-echo "  Creating CertificateAuthority \"kubedemo.example.com\":"
+echo "  Creating root CA:"
 kubectl apply \
         --filename $CLUSTER_DIR/certificates-cert-manager-root-ca.yaml \
         --kubeconfig $KUBECONFIG \

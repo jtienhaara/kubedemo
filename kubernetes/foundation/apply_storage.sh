@@ -64,7 +64,7 @@ do
                              | wc -l \
                              2>&1`
     if test $? -ne 0 \
-            -o "$NUM_MONS_OSDS_READY" != "6"
+            -o "$NUM_MONS_OSDS_READY" -lt 6
     then
         if test $TOTAL_SECONDS -eq 0
         then
