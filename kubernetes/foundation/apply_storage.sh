@@ -3,6 +3,19 @@
 #
 # Rook/Ceph for storage.
 #
+# Version 1.13.3 from:
+#
+#     https://github.com/rook/rook/releases
+#
+# (Note that cluster/storage-rook-operator.yaml explicitly mentions
+# the version number, to pull down the appropriate version of the
+# Rook operator; but the other cluster/storage-rook-*.yaml manifests
+# might need to change, too, as new versions of Rook are released.)
+#
+# This version of Rook/Ceph is supported on version 1.29 of Kubernetes:
+#
+#     https://rook.io/docs/rook/latest-release/Getting-Started/quickstart/#kubernetes-version
+#
 echo "Installing storage (Rook/Ceph)..."
 
 CLUSTER_DIR=/cloud-init/kubernetes/foundation/cluster
@@ -51,7 +64,7 @@ do
                              | wc -l \
                              2>&1`
     if test $? -ne 0 \
-            -o "$NUM_MONS_OSDS_READY" != "6"
+            -o "$NUM_MONS_OSDS_READY" -lt 6
     then
         if test $TOTAL_SECONDS -eq 0
         then
@@ -84,7 +97,7 @@ done
 
 if test $TOTAL_SECONDS -ge $MAX_SECONDS
 then
-    echo "ERROR Kubernetes still isn't ready after $TOTAL_SECONDS" >&2
+    echo "ERROR Rook/Ceph still isn't ready after $TOTAL_SECONDS" >&2
     exit 1
 fi
 

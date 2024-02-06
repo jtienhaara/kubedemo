@@ -30,23 +30,35 @@ echo "    Installing helm:"
 sudo $RUN_DIR/foundation/install_helm.sh \
     || exit 2
 
+
+echo "  Configuring OS:"
+
+echo "    Setting limits:"
+$RUN_DIR/foundation/os_limits.sh \
+    || exit 3
+
+
 echo "  Creating cluster:"
 
 echo "    Creating \"kubedemo\" cluster:"
 $RUN_DIR/foundation/create_cluster.sh \
-    || exit 3
+    || exit 4
 
 echo "    Applying storage (Rook/Ceph) to \"kubedemo\" cluster:"
 $RUN_DIR/foundation/apply_storage.sh \
-    || exit 3
+    || exit 4
 
 echo "    Applying observability (kube-prometheus) to \"kubedemo\" cluster:"
 $RUN_DIR/foundation/apply_observability.sh \
-    || exit 3
+    || exit 4
+
+echo "    Applying certificates (cert-manager) to \"kubedemo\" cluster:"
+$RUN_DIR/foundation/apply_certificates.sh \
+    || exit 4
 
 echo "    Applying secrets (HashiCorp Vault) to \"kubedemo\" cluster:"
 $RUN_DIR/foundation/apply_secrets.sh \
-    || exit 3
+    || exit 4
 
 echo "SUCCESS Installing the foundation for a Kubernetes demo."
 exit 0
