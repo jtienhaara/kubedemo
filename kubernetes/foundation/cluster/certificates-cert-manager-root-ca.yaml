@@ -1,0 +1,112 @@
+#
+# A root certificate authority trust bundle for in-cluster services
+# to accept cert-manager certificates.
+#
+# We create a self-signed root CA certificate using cert-manager;
+# put it into a trust bundle using trust-manager; store the root CA
+# certificate in the trusted CAs of each application that needs
+# inside-cluster certificates (e.g. for TLS handshaking between services);
+# then we can issue a certificate for each application that needs it,
+# using our root CA certificate to sign/authorize the certificate.
+# Because the application has the root CA certificate in its trust store,
+# and the application's new certificate for TLS handshaking is authorized
+# by the root CA, the application trusts the certificate we give it.
+#
+# Adapted from the trust-manager example:
+#
+#     https://cert-manager.io/docs/trust/trust-manager/#quick-start-example
+#
+# And the bootstrapping a root CA cert-manager example:
+#
+#     https://cert-manager.io/docs/configuration/selfsigned/#bootstrapping-ca-issuers
+#
+---
+apiVersion: cert-manager.io/v1
+kind: Issuer
+metadata:
+  name: kubedemo-root-issuer
+  namespace: cert-manager
+spec:
+  selfSigned: {}
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: kubedemo-root-ca
+  namespace: cert-manager
+spec:
+  isCA: true
+  commonName: kubedemo-root-ca
+  secretName: kubedemo-root-ca-secret
+  privateKey:
+    algorithm: ECDSA
+    size: 256
+  issuerRef:
+    name: kubedemo-root-issuer
+    namespace: cert-manager
+    kind: Issuer
+    group: cert-manager.io
+---
+apiVersion: trust.cert-manager.io/v1alpha1
+kind: Bundle
+metadata:
+  name: kubedemo-trust
+  # All namespaces can use this trust bundle.
+spec:
+  sources:
+  - useDefaultCAs: true
+  - secret:
+      name: "kubedemo-root-ca-secret"
+      key: "tls.crt"  # Self-signed, there is no chain.
+  target:
+    configMap:
+      key: "trust-bundle.pem"
+---
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: kubedemo-issuer
+spec:
+  ca:
+    secretName: kubedemo-root-ca-secret
+---
+#
+# To request a Secret certificate signed by our root CA
+# (based on https://cert-manager.io/docs/usage/certificate/):
+#
+#     apiVersion: cert-manager.io/v1
+#     kind: Certificate
+#     metadata:
+#       name: application-name
+#       namespace: application-namespace
+#     spec:
+#       secretName: application-tls
+#       duration: 2160h  # 90 days - fine for our kubedemo.
+#       renewBefore: 360h  # 15 days - fine for our kubedemo.
+#       subject:
+#         organizations:
+#           - application
+#       # The use of the common name field has been deprecated since 2000 and is
+#       # discouraged from being used.
+#       # commonName: example.com
+#       isCA: false
+#       privateKey:
+#         algorithm: RSA
+#         encoding: PKCS1
+#         size: 2048
+#       usages:
+#         - server auth
+#         - client auth
+#       # At least one of a DNS Name, URI, IP address or otherName is required.
+#       dnsNames:
+#         - application.kubedemo
+#       uris:
+#         - spiffe://cluster.local/ns/application-namespace/sa/application-name
+#       issuerRef:
+#         name: kubedemo-issuer
+#         kind: ClusterIssuer
+#
+# Then you can mount the Secret as a volume in your application,
+# and use tls.crt for TLS handshaking and so on, as long as all parties
+# trust the kubedemo root CA.
+#

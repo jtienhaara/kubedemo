@@ -7,11 +7,32 @@
 #
 #     https://github.com/cert-manager/cert-manager/releases
 #
+# cert-manager itself is licensed under the Apache 2.0 license,
+# but the LICENSES file lists all kinds of dependency licneses that
+# I'm afraid I have not gone through with a fine-toothed comb:
+#
+#     https://github.com/cert-manager/cert-manager/blob/v1.14.1/LICENSE
+#     https://github.com/cert-manager/cert-manager/blob/v1.14.1/LICENSES
+#
 # This version of cert-manager is supported on version 1.29 of Kubernetes:
 #
 #     https://cert-manager.io/docs/releases/#currently-supported-releases
 #
-echo "Installing certificates (cert-manager)..."
+# trust-manager: https://cert-manager.io/docs/trust/trust-manager/
+#
+# Version 0.8.0 of trust-manager Helm Chart from:
+#
+#     https://github.com/cert-manager/trust-manager/releases
+#
+# trust-manager is licensed under the Apache 2.0 license:
+#
+#     https://github.com/cert-manager/trust-manager/blob/v0.8.0/LICENSE
+#
+
+CERT_MANAGER_VERSION=1.14.1
+TRUST_MANAGER_HELM_CHART_VERSION=0.8.0
+
+echo "Installing certificates (cert-manager $CERT_MANAGER_VERSION)..."
 
 CLUSTER_DIR=/cloud-init/kubernetes/foundation/cluster
 KUBECONFIG=$HOME/.kube/kubeconfig-kubedemo.yaml
@@ -67,5 +88,26 @@ then
     exit 1
 fi
 
-echo "SUCCESS Installing certificates (cert-manager)."
+#
+# trust-manager: https://cert-manager.io/docs/trust/trust-manager/
+#
+echo "  Adding certificates jetstack Helm repo:"
+helm repo add jetstack https://charts.jetstack.io --force-update \
+    || exit 1
+
+echo "  Installing trust-manager Helm chart version $TRUST_MANAGER_HELM_CHART_VERSION:"
+helm upgrade --install trust-manager jetstack/trust-manager \
+     --version $TRUST_MANAGER_HELM_CHART_VERSION \
+     --namespace cert-manager \
+     --wait \
+     --kubeconfig $KUBECONFIG \
+    || exit 1
+
+echo "  Creating CertificateAuthority \"kubedemo.example.com\":"
+kubectl apply \
+        --filename $CLUSTER_DIR/certificates-cert-manager-root-ca.yaml \
+        --kubeconfig $KUBECONFIG \
+    || exit 1
+
+echo "SUCCESS Installing certificates (cert-manager $CERT_MANAGER_VERSION)."
 exit 0

@@ -90,12 +90,7 @@ helm upgrade --install csi-secrets-store \
      secrets-store-csi-driver/secrets-store-csi-driver \
      --version $CSI_DRIVER_HELM_VERSION \
      --namespace kube-system \
-     --kubeconfig $KUBECONFIG \
-    || exit 1
-
-echo "  Adding HashiCorp Helm repo:"
-helm repo add hashicorp \
-     https://helm.releases.hashicorp.com \
+     --wait \
      --kubeconfig $KUBECONFIG \
     || exit 1
 
@@ -105,11 +100,24 @@ kubectl apply \
         --kubeconfig $KUBECONFIG \
     || exit 1
 
+echo "  Creating Certificate and Secret \"vault-tls\":"
+kubectl apply \
+        --filename $CLUSTER_DIR/secrets-vault-tls.yaml \
+        --kubeconfig $KUBECONFIG \
+    || exit 1
+
+echo "  Adding HashiCorp Helm repo:"
+helm repo add hashicorp \
+     https://helm.releases.hashicorp.com \
+     --kubeconfig $KUBECONFIG \
+    || exit 1
+
 echo "  Helm installing HashiCorp Vault:"
 helm upgrade --install vault hashicorp/vault \
      --version $VAULT_HELM_VERSION \
      --values $CLUSTER_DIR/secrets-vault-values.yaml \
      --namespace vault \
+     --wait \
      --kubeconfig $KUBECONFIG \
     || exit 1
 
