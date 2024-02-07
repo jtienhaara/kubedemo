@@ -67,7 +67,7 @@ echo "  Waiting for kube-prometheus setup to finish installing CRDs:"
 kubectl wait \
 	--for condition=Established \
 	--all CustomResourceDefinition \
-	--namespace=monitoring \
+	--namespace monitoring \
         --kubeconfig $KUBECONFIG \
     || exit 1
 

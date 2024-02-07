@@ -98,5 +98,9 @@ echo "  Making helm executable by all:"
 sudo chmod a+x /usr/local/bin/helm \
     || exit 5
 
+echo "  Removing temporary helm files:"
+rm -rf ./helm ./helm.tar.gz \
+    || exit 6
+
 echo "SUCCESS Installing helm version $HELM_VERSION."
 exit 0
