@@ -139,7 +139,7 @@ kubectl wait pod \
 #
 #     https://developer.hashicorp.com/vault/tutorials/kubernetes/kubernetes-raft-deployment-guide#initialize-and-unseal-vault
 #
-# UNSEALED_VAULT should look something along the lines of:
+# VAULT_KEYS should look something along the lines of:
 #
 #     Unseal Key 1: MBFSDepD9E6whREc6Dj+k3pMaKJ6cCnCUWcySJQymObb
 #     Unseal Key 2: zQj4v22k9ixegS+94HJwmIaWLBL3nZHe1i+b/wHz25fr
@@ -172,12 +172,12 @@ kubectl exec \
 EXIT_CODE=$?
 if test $EXIT_CODE -ne 0
 then
-    echo "  Unsealing Vault:"
-    UNSEALED_VAULT=`kubectl exec \
-                        vault-0 --namespace vault --kubeconfig $KUBECONFIG -- \
-                        vault operator init \
-                            -ca-cert /opt/vault/tls/vault-0/ca.crt \
-                            -non-interactive`
+    echo "  Initializing Vault:"
+    VAULT_KEYS=`kubectl exec \
+                    vault-0 --namespace vault --kubeconfig $KUBECONFIG -- \
+                    vault operator init \
+                        -ca-cert /opt/vault/tls/vault-0/ca.crt \
+                        -non-interactive`
     EXIT_CODE=$?
     if test $EXIT_CODE -ne 0
     then
@@ -188,14 +188,14 @@ then
     echo "  Storing Vault unseal keys and initial root token in $HOME/.vault_keys:"
     touch $HOME/.vault_keys \
         || exit 1
-    echo "$UNSEALED_VAULT" \
+    echo "$VAULT_KEYS" \
          > $HOME/.vault_keys \
         || exit 1
     chmod u-wx,go-rwx $HOME/.vault_keys \
         || exit 1
 else
-    UNSEALED_VAULT=`cat $HOME/.vault_keys`
-    if test -z "$UNSEALED_VAULT"
+    VAULT_KEYS=`cat $HOME/.vault_keys`
+    if test -z "$VAULT_KEYS"
     then
         echo "ERROR Vault has already been initialized, but there is no $HOME/.vault_keys to unseal it." >&2
         exit 1
@@ -203,7 +203,7 @@ else
 fi
 
 echo "  Unsealing vault Pods..."
-UNSEAL_KEYS=`echo "$UNSEALED_VAULT" \
+UNSEAL_KEYS=`echo "$VAULT_KEYS" \
                  | grep '^Unseal Key [1-9][0-9]*:' \
                  | sed 's|^Unseal Key [1-9][0-9]*:[ ]*\(.*\)$|\1|'`
 if test -z "$UNSEAL_KEYS"
@@ -221,14 +221,44 @@ do
         NEW_UNSEAL_KEY_NUM=`expr $UNSEAL_KEY_NUM + 1`
         UNSEAL_KEY_NUM=$NEW_UNSEAL_KEY_NUM
 
+        #
+        # Race condition:
+        # Sometimes one of the Pods will restart and not know it's initialized
+        # at the same we try to unseal it.  Waiting a bit then trying
+        # again should allow it to connect with the other Pods and realize
+        # it is initialized.
+        #
+        #       Initializing Vault:
+        #       Storing Vault unseal keys and initial root token in /home/kubedemo/.vault_keys:
+        #       Unsealing vault Pods...
+        #         Unsealing vault-0 with unseal key 1:
+        #     ...
+        #           vault-0 is now ready.
+        #         Unsealing vault-1 with unseal key 1:
+        #     Error unsealing: Error making API request.
+        #     URL: PUT https://127.0.0.1:8200/v1/sys/unseal
+        #     Code: 400. Errors:
+        #     * Vault is not initialized
+        #     command terminated with exit code 2
+        #
         echo "    Unsealing $VAULT_POD with unseal key $UNSEAL_KEY_NUM:"
-        kubectl exec \
+        TRY_SLEEP_SECONDS=3
+        for TRY_NUM in 1 2
+        do
+            if test $TRY_NUM -gt 1
+            then
+                echo "      Trying again in $TRY_SLEEP_SECONDS seconds..."
+                sleep $TRY_SLEEP_SECONDS
+            fi
+
+            kubectl exec \
                 "$VAULT_POD" --namespace vault --kubeconfig $KUBECONFIG -- \
                 vault operator unseal \
                     -ca-cert /opt/vault/tls/$VAULT_POD/ca.crt \
                     -non-interactive \
                     "$UNSEAL_KEY" \
-            || exit 1
+                && break
+        done
 
         if test $UNSEAL_KEY_NUM -ge 3
         then

@@ -1,6 +1,7 @@
 #
 # Allow traffic into Grafana UI via Istio.
 #
+---
 apiVersion: networking.istio.io/v1beta1
 kind: VirtualService
 metadata:
@@ -10,7 +11,7 @@ spec:
   hosts:
     - "*"
   gateways:
-    - kubedemo-gateway
+    - istio-system/kubedemo-gateway
   http:
     - match:
         - uri:

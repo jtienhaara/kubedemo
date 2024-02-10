@@ -32,23 +32,53 @@
 kind: Cluster
 apiVersion: kind.x-k8s.io/v1alpha4
 name: "kubedemo"
+networking:
+  #
+  # According to this message on the internet, iptables DNAT will not
+  # work to route traffic to our MetalLB load balancer unless we switch
+  # kube-proxy from the default "iptables" mode to "ipvs" mode.
+  #
+  #     https://www.reddit.com/r/kubernetes/comments/hx710b/metallb_iptables_on_bare_metal_cluster/?utm_source=share&utm_medium=web3x&utm_name=web3xcss&utm_term=1&utm_content=share_button
+  #
+  # (See the "EDIT" section at the bottom of the original post.)
+  #
+  # TODO find out why...
+  #
+  kubeProxyMode: "ipvs"
 nodes:
-- role: control-plane
-- role: worker
-  extraMounts:
-  - hostPath: /sys/bus
-    containerPath: /sys/bus
-  - hostPath: /dev
-    containerPath: /dev
-- role: worker
-  extraMounts:
-  - hostPath: /sys/bus
-    containerPath: /sys/bus
-  - hostPath: /dev
-    containerPath: /dev
-- role: worker
-  extraMounts:
-  - hostPath: /sys/bus
-    containerPath: /sys/bus
-  - hostPath: /dev
-    containerPath: /dev
+  - role: control-plane
+  - role: worker
+    #
+    # extraMounts required for Rook rbd block devices inside container:
+    #
+    extraMounts:
+      - hostPath: /sys/bus
+        containerPath: /sys/bus
+      - hostPath: /dev
+        containerPath: /dev
+    #
+    # TODO: Maybe move extraPortMappings from control-plane node to a worker...?
+    # extraPortMappings required for HTTP/80 ingress into cluster apps:
+    #
+    extraPortMappings:
+      - containerPort: 80
+        hostPort: 80
+        protocol: TCP
+  - role: worker
+    #
+    # extraMounts required for Rook rbd block devices inside container:
+    #
+    extraMounts:
+      - hostPath: /sys/bus
+        containerPath: /sys/bus
+      - hostPath: /dev
+        containerPath: /dev
+  - role: worker
+    #
+    # extraMounts required for Rook rbd block devices inside container:
+    #
+    extraMounts:
+      - hostPath: /sys/bus
+        containerPath: /sys/bus
+      - hostPath: /dev
+        containerPath: /dev

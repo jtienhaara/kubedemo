@@ -28,6 +28,12 @@ kubectl wait \
         --kubeconfig $KUBECONFIG \
     || exit 1
 
+echo "  Applying Gateway to expose web UIs..."
+kubectl apply \
+        --filename $CLUSTER_DIR/mesh-istio-gateway.yaml \
+        --kubeconfig $KUBECONFIG \
+    || exit 1
+
 echo "  Applying VirtualServices to expose web UIs..."
 for VIRTUAL_SERVICE in \
     $CLUSTER_DIR/observability-grafana-ingress.yaml
