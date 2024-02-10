@@ -1236,12 +1236,6 @@ echo "\$RUN_DIR/bin/ssh.sh sudo shutdown -h now || exit 1" \
 echo "" \
      >> "$VM_DIR/bin/stop.sh" \
     || exit 17
-echo "rm -f \$RUN_DIR/pid || echo \"WARNING Could not delete pid file: \$RUN_DIR/pid\"" \
-     >> "$VM_DIR/bin/stop.sh" \
-    || exit 17
-echo "" \
-     >> "$VM_DIR/bin/stop.sh" \
-    || exit 17
 echo "echo \"SUCCESS Stopping VM $VM_NAME.\"" \
      >> "$VM_DIR/bin/stop.sh" \
     || exit 17
@@ -1317,12 +1311,6 @@ echo "echo \"Killing VM $VM_NAME pid \$VM_PID:\"" \
      >> "$VM_DIR/bin/kill.sh" \
     || exit 17
 echo "kill \$VM_PID || exit 1" \
-     >> "$VM_DIR/bin/kill.sh" \
-    || exit 17
-echo "" \
-     >> "$VM_DIR/bin/kill.sh" \
-    || exit 17
-echo "rm -f \$RUN_DIR/pid || echo \"WARNING Could not delete pid file: \$RUN_DIR/pid\"" \
      >> "$VM_DIR/bin/kill.sh" \
     || exit 17
 echo "" \
