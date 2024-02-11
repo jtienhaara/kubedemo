@@ -82,8 +82,13 @@ $RUN_DIR/foundation/apply_mesh.sh \
 
 echo "  Finalizing VM setup:"
 
-echo "    Forwarding HTTP port 80 from VM to kubedemo LoadBalancer:"
-$RUN_DIR/foundation/vm_forward_ports.sh \
+# !!! Doing something wrong, nothing I try works (and I've tried a lot):
+# !!! echo "    Forwarding HTTP port 8080 from VM to kubedemo LoadBalancer:"
+# !!! $RUN_DIR/foundation/vm_forward_ports.sh \
+# !!!     || exit 5
+
+echo "    Reverse proxying HTTP port 8080 from VM to kubedemo LoadBalancer:"
+$RUN_DIR/foundation/vm_reverse_proxy.sh \
     || exit 5
 
 

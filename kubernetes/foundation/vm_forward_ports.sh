@@ -16,7 +16,7 @@ IPTABLES_BACKUP_FILE=/etc/sysconfig/iptables.$DATE_TIME.backup
 #
 # Route ports from the VM (or machine) in which this runs to the
 # LoadBalancer running inside the kind cluster, so that we can
-# point a browser to http://localhost:80 from the VM's host,
+# point a browser to http://localhost:7080 from the VM's host,
 # have it routed through the VM via iptables to the Docker exposed
 # port, and into the cluster to reach our apps.
 #
@@ -108,15 +108,6 @@ sudo mv -f /tmp/iptables.$DATE_TIME.backup $IPTABLES_BACKUP_FILE \
 #
 
 #
-# Purge all PREROUTING and POSTROUTING rules in the nat table.
-#
-echo "    Purge all PREROUTING and POSTROUTING rules in the nat table..."
-sudo iptables -t nat -F PREROUTING \
-    || exit 2
-sudo iptables -t nat -F POSTROUTING \
-    || exit 2
-
-#
 # We'll use NAT to route incoming HTTP requests to the kind LoadBalancer,
 # which has a Docker-exposed port, on port 80.
 #
@@ -124,27 +115,89 @@ sudo iptables -t nat -F POSTROUTING \
 # this VM, not with the Docker IP address of the LoadBalancer Service
 # in the kubedemo cluster.
 #
-echo "  Preroute HTTP/80 traffic to kubedemo LoadBalancer $LOAD_BALANCER_IP_ADDRESS..."
+# Excellent explanations of iptables rules and options:
+#
+#     https://dustinspecker.com/posts/iptables-how-docker-publishes-ports/
+#
+echo "  Preroute HTTP/8080 traffic to kubedemo LoadBalancer $LOAD_BALANCER_IP_ADDRESS..."
 for NETWORK_INTERFACE in $EXTERNAL_INTERFACES $LOOPBACK_INTERFACE
 do
-    sudo iptables -t nat -A PREROUTING -i "$NETWORK_INTERFACE" -p tcp \
-             --dport 80 -j DNAT --to-destination $LOAD_BALANCER_IP_ADDRESS:80 \
+    #
+    # Clean up any mess we've left behind:
+    #
+    while test 1 -eq 1
+    do
+        sudo iptables \
+             --table nat \
+             --delete PREROUTING \
+             --in-interface "$NETWORK_INTERFACE" \
+             --protocol tcp \
+             --match tcp \
+             --dport 8080 \
+             --jump DNAT \
+             --to-destination $LOAD_BALANCER_IP_ADDRESS:80 \
+             2> /dev/null
+        if test $? -ne 0
+        then
+            break
+        fi
+    done
+
+    #
+    # Now add the nat PREROUTING rule:
+    #
+    sudo iptables \
+         --table nat \
+         --append PREROUTING \
+         --in-interface "$NETWORK_INTERFACE" \
+         --protocol tcp \
+         --match tcp \
+         --dport 8080 \
+         --jump DNAT \
+         --to-destination $LOAD_BALANCER_IP_ADDRESS:80 \
         || exit 3
 done
 
+if test 1 -eq 0
+then
+    !!!
 echo "  Masquerade VM traffic as this host..."
 for NETWORK_INTERFACE in $EXTERNAL_INTERFACES $LOOPBACK_INTERFACE
 do
-    sudo iptables -t nat -A POSTROUTING -o "$NETWORK_INTERFACE" \
-         -j MASQUERADE \
+    #
+    # Clean up any mess we've left behind:
+    #
+    while test 1 -eq 1
+    do
+        sudo iptables \
+             --table nat \
+             --delete POSTROUTING \
+             --out-interface "$NETWORK_INTERFACE" \
+             --jump MASQUERADE \
+             2> /dev/null
+        if test $? -ne 0
+        then
+            break
+        fi
+    done
+
+    #
+    # Now add the nat POSTROUTING rule:
+    #
+    sudo iptables \
+         --table nat \
+         --append POSTROUTING \
+         --out-interface "$NETWORK_INTERFACE" \
+         --jump MASQUERADE \
         || exit 6
 done
+!!!
+fi
 
 
 #
-# Permanently turn on IP forwarding in the OS.
+# IP forwarding was turned on in the OS by installing Docker.
 #
-# ???needed?  we'll see...
 
 
 #
