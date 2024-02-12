@@ -5,7 +5,11 @@
 #
 #     https://istio.io/latest/docs/setup/getting-started/#install
 #
+# Note that istioctl was already installed separately
+# (see install_istioctl.sh).
+#
 
+ISTIO_VERSION=1.20.3
 ISTIO_PROFILE=default
 
 echo "Applying service mesh (Istio)..."

@@ -1,13 +1,13 @@
 #!/bin/sh
 
 #
-# Istio 1.20.2 is available from:
+# Istio 1.20.3 is available from:
 #
 #     https://github.com/istio/istio/releases
 #
 # Istio is licensed under the Apache 2.0 license:
 #
-#     https://github.com/istio/istio/blob/1.20.2/LICENSE
+#     https://github.com/istio/istio/blob/1.20.3/LICENSE
 #
 # Preferred install method these days is istioctl.  Instructions:
 #
@@ -18,7 +18,7 @@
 #     https://istio.io/latest/docs/ops/deployment/requirements/
 #
 
-ISTIO_VERSION=1.20.2
+ISTIO_VERSION=1.20.3
 
 echo "Installing Istio service mesh version $ISTIO_VERSION..."
 

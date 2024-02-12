@@ -1,17 +1,30 @@
 #
 # Changes from the original:
 #
+# - Root URL under Istio VirtualService:
+#
 #     [server]
 #     protocol: http
 #     domain: localhost
-#     root_url: http://localhost:7080/garafana
+#     root_url: http://localhost:7080/grafana
 #     serve_from_sub_path: true
 #     router_logging: true
 #     http_port: 3000
 #
-# From:
+#   From:
+#       https://grafana.com/docs/grafana/latest/setup-grafana/configure-grafana/#server
 #
-#     https://grafana.com/docs/grafana/latest/setup-grafana/configure-grafana/#server
+# - Unauthenticated ("anonymous") access:
+#
+#     [auth.anonymous]
+#     enabled = true
+#     org_name = kubedemo
+#     org_role = Viewer
+#
+#   (Unfortunately so far Grafana still asks for user ID and password :( )
+#
+#   From:
+#       https://grafana.com/docs/grafana/latest/setup-grafana/configure-security/configure-authentication/#anonymous-authentication
 #
 apiVersion: v1
 kind: Secret
@@ -34,4 +47,8 @@ stringData:
     serve_from_sub_path: false
     router_logging: true
     http_port: 3000
+    [auth.anonymous]
+    enabled = true
+    org_name = kubedemo
+    org_role = Viewer
 type: Opaque
