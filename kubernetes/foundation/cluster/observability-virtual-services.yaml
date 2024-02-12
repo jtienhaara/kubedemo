@@ -1,0 +1,54 @@
+---
+#
+# Allow traffic into Grafana UI via Istio.
+#
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: grafana
+  namespace: monitoring
+spec:
+  hosts:
+    - "*"
+  gateways:
+    - istio-system/kubedemo-gateway
+  http:
+    - match:
+        - uri:
+            prefix: "/grafana/"
+        - uri:
+            exact: "/grafana"
+      rewrite:
+        uri: "/"
+      route:
+        - destination:
+            host: grafana
+            port:
+              number: 3000
+---
+#
+# Allow traffic into Prometheus UI via Istio.
+#
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: prometheus
+  namespace: monitoring
+spec:
+  hosts:
+    - "*"
+  gateways:
+    - istio-system/kubedemo-gateway
+  http:
+    - match:
+        - uri:
+            prefix: "/prometheus/"
+        - uri:
+            exact: "/prometheus"
+      rewrite:
+        uri: "/"
+      route:
+        - destination:
+            host: prometheus-k8s
+            port:
+              number: 9090

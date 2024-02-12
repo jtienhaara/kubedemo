@@ -36,7 +36,7 @@ kubectl apply \
 
 echo "  Applying VirtualServices to expose web UIs..."
 for VIRTUAL_SERVICE in \
-    $CLUSTER_DIR/observability-grafana-ingress.yaml
+    $CLUSTER_DIR/observability-virtual-services.yaml
 do
     echo "    Applying VirtualService: $VIRTUAL_SERVICE"
     kubectl apply \

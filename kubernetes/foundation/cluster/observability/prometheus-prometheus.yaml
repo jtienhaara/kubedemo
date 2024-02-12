@@ -1,3 +1,25 @@
+#
+# Changes from the original:
+#
+# Added the following for browser URLs outside the VM:
+#
+#       additionalArgs:
+#         - name: "web.external-url"
+#           value: "/prometheus"
+#
+# From:
+#     https://prometheus.io/docs/prometheus/latest/command-line/prometheus/
+#     https://prometheus-operator.dev/docs/operator/api/#monitoring.coreos.com/v1.Prometheus
+#
+# Note: If we deign to set "web.route-prefix" to "/" then the prometheus
+# pods never get deployed because of errors in the prometheus-operator logs:
+#
+#     level=error ts=2024-02-12T01:34:50.727616917Z caller=klog.go:126
+#     component=k8s_client_runtime func=ErrorDepth msg="sync
+#     \"monitoring/k8s\" failed: making statefulset failed: make
+#     StatefulSet spec: can't set arguments which are already managed by
+#     the operator: web.route-prefix"
+#
 apiVersion: monitoring.coreos.com/v1
 kind: Prometheus
 metadata:
@@ -10,6 +32,9 @@ metadata:
   name: k8s
   namespace: monitoring
 spec:
+  additionalArgs:
+    - name: "web.external-url"
+      value: "/prometheus"
   alerting:
     alertmanagers:
     - apiVersion: v2

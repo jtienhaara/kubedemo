@@ -10,6 +10,10 @@ sudo echo "  Granted sudo access." \
 
 echo "  Installing software:"
 
+echo "    Updating apt:"
+sudo apt-get update \
+    || exit 2
+
 echo "    Installing docker:"
 sudo $RUN_DIR/foundation/install_docker.sh \
     || exit 2
