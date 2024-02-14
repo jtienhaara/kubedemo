@@ -38,9 +38,14 @@ kubectl apply \
         --kubeconfig $KUBECONFIG \
     || exit 1
 
+#
+# TODO Disabled for now because https upgrade isn't yet configured correctly:
+#     $CLUSTER_DIR/secrets-vault-virtual-services.yaml
+#
 echo "  Applying VirtualServices to expose web UIs..."
 for VIRTUAL_SERVICE in \
-    $CLUSTER_DIR/observability-virtual-services.yaml
+    $CLUSTER_DIR/observability-virtual-services.yaml \
+    $CLUSTER_DIR/storage-virtual-services.yaml
 do
     echo "    Applying VirtualService: $VIRTUAL_SERVICE"
     kubectl apply \

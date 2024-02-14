@@ -47,6 +47,11 @@
 #       the node labels in your cluster.
 #     - Added missing useAllNodes and useAllDevices fields to CephCluster
 #       storage.
+#     - Changed CephCluster.spec.dashboard.ssl from true to false,
+#       since we're behind an Istio Gateway (which would be TLS-terminated
+#       if our cluster were publicly accessible or we wanted to generate
+#       a self-signed certificate).
+#     - Added CephCluster.spec.dashboard.port = 8080.
 #
 #################################################################################################################
 # Define the settings for the rook-ceph cluster with common settings for a production cluster on top of bare metal.
@@ -234,7 +239,9 @@ spec:
         enabled: true
   dashboard:
     enabled: true
-    ssl: true
+    ssl: false
+    port: 8080
+    urlPrefix: /rook-ceph
   crashCollector:
     disable: false
   storage:

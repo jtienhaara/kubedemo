@@ -1,0 +1,27 @@
+---
+#
+# Allow traffic into the Rook/Ceph dashboard via Istio.
+#
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: rook-ceph
+  namespace: rook-ceph
+spec:
+  hosts:
+    - "*"
+  gateways:
+    - istio-system/kubedemo-gateway
+  http:
+    - match:
+        - uri:
+            prefix: "/rook-ceph/"
+        - uri:
+            exact: "/rook-ceph"
+      rewrite:
+        uri: "/rook-ceph/"
+      route:
+        - destination:
+            host: rook-ceph-mgr-dashboard
+            port:
+              number: 8080
