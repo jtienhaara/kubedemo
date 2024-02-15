@@ -83,7 +83,13 @@ kubectl apply \
 # of them!
 #
 
-echo "  Applying Rook/Ceph storage dashboards for Grafana:"
+echo "  Applying Rook/Ceph storage monitoring to Prometheus:"
+kubectl apply \
+        --filename $CLUSTER_DIR/observability-prometheus-storage-monitor.yaml \
+        --kubeconfig $KUBECONFIG \
+    || exit 1
+
+echo "  Applying Rook/Ceph storage dashboards to Grafana:"
 kubectl apply \
         --filename $CLUSTER_DIR/observability-grafana-storage-dashboards.yaml \
         --kubeconfig $KUBECONFIG \
