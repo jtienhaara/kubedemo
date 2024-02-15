@@ -18,13 +18,31 @@
 #
 #     [auth.anonymous]
 #     enabled = true
-#     org_name = kubedemo
+#     org_name = Main Org.
 #     org_role = Viewer
 #
 #   (Unfortunately so far Grafana still asks for user ID and password :( )
 #
 #   From:
 #       https://grafana.com/docs/grafana/latest/setup-grafana/configure-security/configure-authentication/#anonymous-authentication
+#
+# - Also added:
+#
+#       [auth]
+#       disable_login_form = true
+#
+#   From:
+#       https://grafana.com/docs/grafana/latest/setup-grafana/configure-security/configure-authentication/grafana/
+#
+# - Allow embedding Grafana views inside Rook/Ceph dashboard, though we
+#   have not yet finished configuring the Rook/Ceph side, according to
+#   the Ceph documentation:
+#
+#       [security]
+#       allow_embedding = true
+#
+#   From:
+#       https://docs.ceph.com/en/latest/mgr/dashboard/#enabling-the-embedding-of-grafana-dashboards
 #
 apiVersion: v1
 kind: Secret
@@ -49,6 +67,10 @@ stringData:
     http_port: 3000
     [auth.anonymous]
     enabled = true
-    org_name = kubedemo
+    org_name = Main Org.
     org_role = Viewer
+    [auth]
+    disable_login_form = true
+    [security]
+    allow_embedding = true
 type: Opaque

@@ -43,8 +43,8 @@ kubectl apply \
     || exit 1
 
 echo "  Waiting for Rook/Ceph pods to be ready..."
-# 10 minutes is a long time...!
-MAX_SECONDS=600
+# 15 minutes is a long time...!
+MAX_SECONDS=900
 SLEEP_SECONDS=30
 TOTAL_SECONDS=0
 while test $TOTAL_SECONDS -lt $MAX_SECONDS

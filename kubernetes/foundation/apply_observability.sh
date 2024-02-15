@@ -83,5 +83,11 @@ kubectl apply \
 # of them!
 #
 
+echo "  Applying Rook/Ceph storage dashboards for Grafana:"
+kubectl apply \
+        --filename $CLUSTER_DIR/observability-grafana-storage-dashboards.yaml \
+        --kubeconfig $KUBECONFIG \
+    || exit 1
+
 echo "SUCCESS Installing observability (kube-prometheus)."
 exit 0

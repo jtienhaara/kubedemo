@@ -1,3 +1,9 @@
+#
+# Modified from the original to add dashboards by mounting ConfigMaps:
+#
+# - The Rook/Ceph storage dashboards in
+#   ../observability-grafana-storage-dashboards.yaml
+#
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -148,6 +154,18 @@ spec:
         - mountPath: /etc/grafana
           name: grafana-config
           readOnly: false
+        #
+        # Added for kubedemo:
+        #
+        - mountPath: /grafana-dashboard-definitions/0/ceph-cluster
+          name: grafana-dashboard-ceph-cluster
+          readOnly: false
+        - mountPath: /grafana-dashboard-definitions/0/ceph-osd-single
+          name: grafana-dashboard-ceph-osd-single
+          readOnly: false
+        - mountPath: /grafana-dashboard-definitions/0/ceph-pools
+          name: grafana-dashboard-ceph-pools
+          readOnly: false
       nodeSelector:
         kubernetes.io/os: linux
       securityContext:
@@ -248,3 +266,15 @@ spec:
       - name: grafana-config
         secret:
           secretName: grafana-config
+      #
+      # Added for kubedemo:
+      #
+      - configMap:
+          name: grafana-dashboard-ceph-cluster
+        name: grafana-dashboard-ceph-cluster
+      - configMap:
+          name: grafana-dashboard-ceph-osd-single
+        name: grafana-dashboard-ceph-osd-single
+      - configMap:
+          name: grafana-dashboard-ceph-pools
+        name: grafana-dashboard-ceph-pools
