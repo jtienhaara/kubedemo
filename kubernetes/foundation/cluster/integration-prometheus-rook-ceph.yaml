@@ -1,4 +1,7 @@
 ---
+#
+# Tell Prometheus about Services in the rook-ceph namespace, for observability.
+#
 apiVersion: monitoring.coreos.com/v1
 kind: ServiceMonitor
 metadata:

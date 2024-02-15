@@ -86,14 +86,16 @@ $RUN_DIR/foundation/apply_mesh.sh \
 
 echo "  Finalizing VM setup:"
 
-# !!! Doing something wrong, nothing I try works (and I've tried a lot):
-# !!! echo "    Forwarding HTTP port 8080 from VM to kubedemo LoadBalancer:"
-# !!! $RUN_DIR/foundation/vm_forward_ports.sh \
-# !!!     || exit 5
-
 echo "    Reverse proxying HTTP port 8080 from VM to kubedemo LoadBalancer:"
 $RUN_DIR/foundation/vm_reverse_proxy.sh \
-    || exit 5
+    || exit 6
+
+
+echo "  Integrating foundation components:"
+
+echo "    Integrating observability with apps (storage, secrets, and so on):"
+$RUN_DIR/foundation/integrate_observability.sh \
+    || exit 7
 
 
 echo "SUCCESS Installing the foundation for a Kubernetes demo."
