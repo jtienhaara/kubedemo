@@ -14,7 +14,8 @@ echo "  Applying observability manifests for specific applications:"
 for OBSERVABILITY_MANIFEST in \
      $CLUSTER_DIR/integration-prometheus-clusterrole.yaml \
      $CLUSTER_DIR/integration-prometheus-rook-ceph.yaml \
-     $CLUSTER_DIR/integration-grafana-rook-ceph.yaml
+     $CLUSTER_DIR/integration-grafana-rook-ceph.yaml \
+     $CLUSTER_DIR/integration-grafana-vault.yaml
 do
     echo "    $OBSERVABILITY_MANIFEST:"
     kubectl apply \

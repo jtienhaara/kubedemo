@@ -35,7 +35,7 @@
 #           - /dev/vdg
 #           - /dev/vdh
 #           - /dev/vdi
-#     - Reduce the size of each mon and osd backing volume from 10Gi to 1Gi.
+#     - Reduce the size of each mon and osd backing volume from 10Gi to 1Gi/4Gi.
 #     - Uncomment the OSD daemon limits and OSD prepare limits
 #       for resource consumption by Rook/Ceph Pods.
 #     - Renamed all "local*" resources to "kubedemo*".
@@ -102,7 +102,7 @@ metadata:
 spec:
   storageClassName: rook-storage
   capacity:
-    storage: 1Gi
+    storage: 4Gi
   accessModes:
     - ReadWriteOnce
   persistentVolumeReclaimPolicy: Retain
@@ -149,7 +149,7 @@ metadata:
 spec:
   storageClassName: rook-storage
   capacity:
-    storage: 1Gi
+    storage: 4Gi
   accessModes:
     - ReadWriteOnce
   persistentVolumeReclaimPolicy: Retain
@@ -195,7 +195,7 @@ metadata:
 spec:
   storageClassName: rook-storage
   capacity:
-    storage: 1Gi
+    storage: 4Gi
   accessModes:
     - ReadWriteOnce
   persistentVolumeReclaimPolicy: Retain
@@ -297,7 +297,7 @@ spec:
             spec:
               resources:
                 requests:
-                  storage: 1Gi
+                  storage: 4Gi
               # IMPORTANT: Change the storage class depending on your environment
               storageClassName: rook-storage
               volumeMode: Block

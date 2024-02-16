@@ -1,11 +1,33 @@
 #
-# Modified from the original to add dashboards by mounting ConfigMaps:
+# Modified from the original:
 #
-# - The Rook/Ceph storage dashboards in
-#   ../integration-grafana-rook-ceph.yaml
-# - The Vault secrets dashboards in
-#   ../integration-grafana-vault.yaml
+# - To add dashboards by mounting ConfigMaps:
 #
+#       - The Rook/Ceph storage dashboards in
+#         ../integration-grafana-rook-ceph.yaml
+#       - The Vault secrets dashboards in
+#         ../integration-grafana-vault.yaml
+#
+# - To change from grafana-storage volume of type emptyDir
+#   to PersistentVolumeClaim backed by rook/ceph.
+#
+---
+#
+# Rook/Ceph backing for Grafana storage:
+#
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: grafana-storage
+  namespace: monitoring
+spec:
+  storageClassName: kubedemo-block
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -168,9 +190,6 @@ spec:
         - mountPath: /grafana-dashboard-definitions/0/ceph-pools
           name: grafana-dashboard-ceph-pools
           readOnly: false
-        - mountPath: /grafana-dashboard-definitions/0/vault-vso
-          name: grafana-dashboard-vault-vso
-          readOnly: false
         - mountPath: /grafana-dashboard-definitions/0/vault
           name: grafana-dashboard-vault
           readOnly: false
@@ -182,8 +201,9 @@ spec:
         runAsUser: 65534
       serviceAccountName: grafana
       volumes:
-      - emptyDir: {}
-        name: grafana-storage
+      - name: grafana-storage
+        persistentVolumeClaim:
+          claimName: grafana-storage
       - name: grafana-datasources
         secret:
           secretName: grafana-datasources
@@ -286,9 +306,6 @@ spec:
       - configMap:
           name: grafana-dashboard-ceph-pools
         name: grafana-dashboard-ceph-pools
-      - configMap:
-          name: grafana-dashboard-vault-vso
-        name: grafana-dashboard-vault-vso
       - configMap:
           name: grafana-dashboard-vault
         name: grafana-dashboard-vault

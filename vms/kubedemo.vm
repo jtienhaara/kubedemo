@@ -85,9 +85,9 @@ VM_DISK_os_SIZE='40G'
 VM_DISK_mon1_SIZE='1G'
 VM_DISK_mon2_SIZE='1G'
 VM_DISK_mon3_SIZE='1G'
-VM_DISK_osd1_SIZE='1G'
-VM_DISK_osd2_SIZE='1G'
-VM_DISK_osd3_SIZE='1G'
+VM_DISK_osd1_SIZE='4G'
+VM_DISK_osd2_SIZE='4G'
+VM_DISK_osd3_SIZE='4G'
 
 #
 # User and identity:

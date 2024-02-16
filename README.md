@@ -9,7 +9,7 @@ for Debian 12 Bookworm.  To run them in an isolated environment,
 spin up a Debian VM.
 
 If you're already in a Debian (or probably Ubuntu) environment,
-and you have 2 CPUs, 8 GB memory, and 46 GB disk space to spare,
+and you have 2 CPUs, 8 GB memory, and 55 GB disk space to spare,
 then you can use qemu + kvm to create an isolated environment
 in which to install the Kubernetes + CNCF demo software:
 

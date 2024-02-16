@@ -1,24 +1,38 @@
 #
 # Changes from the original:
 #
-# Added the following for browser URLs outside the VM:
+# - Added the following for browser URLs outside the VM:
 #
 #       additionalArgs:
 #         - name: "web.external-url"
 #           value: "/prometheus"
 #
-# From:
-#     https://prometheus.io/docs/prometheus/latest/command-line/prometheus/
-#     https://prometheus-operator.dev/docs/operator/api/#monitoring.coreos.com/v1.Prometheus
+#   From:
+#       https://prometheus.io/docs/prometheus/latest/command-line/prometheus/
+#       https://prometheus-operator.dev/docs/operator/api/#monitoring.coreos.com/v1.Prometheus
 #
-# Note: If we deign to set "web.route-prefix" to "/" then the prometheus
-# pods never get deployed because of errors in the prometheus-operator logs:
+#   Note: If we deign to set "web.route-prefix" to "/" then the prometheus
+#   pods never get deployed because of errors in the prometheus-operator logs:
 #
-#     level=error ts=2024-02-12T01:34:50.727616917Z caller=klog.go:126
-#     component=k8s_client_runtime func=ErrorDepth msg="sync
-#     \"monitoring/k8s\" failed: making statefulset failed: make
-#     StatefulSet spec: can't set arguments which are already managed by
-#     the operator: web.route-prefix"
+#       level=error ts=2024-02-12T01:34:50.727616917Z caller=klog.go:126
+#       component=k8s_client_runtime func=ErrorDepth msg="sync
+#       \"monitoring/k8s\" failed: making statefulset failed: make
+#       StatefulSet spec: can't set arguments which are already managed by
+#       the operator: web.route-prefix"
+#
+# - Changed from emptyDir storage to Rook/Ceph:
+#
+#         storage:
+#           volumeClaimTemplate:
+#             spec:
+#               storageClassName: kubedemo
+#               resources:
+#                 requests:
+#                   storage: 1Gi
+#
+#   From:
+#       https://prometheus-operator.dev/docs/operator/storage/
+#       https://prometheus-operator.dev/docs/operator/api/#monitoring.coreos.com/v1.StorageSpec
 #
 apiVersion: monitoring.coreos.com/v1
 kind: Prometheus
@@ -72,4 +86,15 @@ spec:
   serviceAccountName: prometheus-k8s
   serviceMonitorNamespaceSelector: {}
   serviceMonitorSelector: {}
+  #
+  # Rook/Ceph for storage:
+  # 2 x 1 GB disks (1 per replica).
+  #
+  storage:
+    volumeClaimTemplate:
+      spec:
+        storageClassName: kubedemo-block
+        resources:
+          requests:
+            storage: 1Gi
   version: 2.49.1
