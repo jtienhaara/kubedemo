@@ -15,9 +15,6 @@ metadata:
 spec:
   endpoints:
   - interval: 30s
-    params:
-      format:
-      - prometheus
     path: /metrics
     # Port 9283 "http-metrics":
     port: http-metrics
