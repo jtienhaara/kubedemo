@@ -1,0 +1,54 @@
+#
+# From:
+#
+#     https://rook.io/docs/rook/v1.13/Storage-Configuration/Object-Storage-RGW/object-storage/#create-a-local-object-store
+#
+# Modified from the original:
+#
+# - CephObjectStore.metadata.name changed to "kubedemo-s3".
+# - CephObjectStore.spec.healthCheck.bucket removed due to:
+#   CephObjectStore: strict decoding error: unknown field "spec.healthCheck.bucket"
+# - CephObjectStore.spec.healthCheck.readinessProbe added.
+# - StorageClass.metadata.name changed to "kubedemo-s3-bucket1".
+# - StorageClass.parameters.objectStoreName changed to "kubedemo-s3".
+#
+---
+apiVersion: ceph.rook.io/v1
+kind: CephObjectStore
+metadata:
+  name: kubedemo-s3
+  namespace: rook-ceph
+spec:
+  metadataPool:
+    failureDomain: host
+    replicated:
+      size: 3
+  dataPool:
+    failureDomain: host
+    erasureCoded:
+      dataChunks: 2
+      codingChunks: 1
+  preservePoolsOnDelete: true
+  gateway:
+    sslCertificateRef:
+    port: 80
+    # securePort: 443
+    instances: 1
+  healthCheck:
+    # bucket and livenessProbe are not supported for some reason.  Old version?
+    startupProbe:
+      disabled: false
+    readinessProbe:
+      disabled: false
+      periodSeconds: 5
+      failureThreshold: 2
+---
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+   name: kubedemo-s3-bucket
+provisioner: rook-ceph.ceph.rook.io/bucket
+reclaimPolicy: Delete
+parameters:
+  objectStoreName: kubedemo-s3
+  objectStoreNamespace: rook-ceph

@@ -1,0 +1,29 @@
+#
+# From:
+#
+#     https://rook.io/docs/rook/v1.13/Storage-Configuration/Object-Storage-RGW/object-storage/#create-a-local-object-store
+#
+# Also:
+#
+#     https://rook.io/docs/rook/v1.13/Storage-Configuration/Object-Storage-RGW/ceph-object-bucket-claim/#example
+#
+# Modified from the original:
+#
+# - ObjectBucketClaim.metadata.name changed to "loki-bucket"
+# - ObjectBucketClaim.spec.generateBucketName changed to "loki"
+# - ObjectBucketClaim.spec.storageClassName changed to "kubedemo-s3-bucket"
+#   to reference the StorageClass in storage-rook-s3.yaml
+# - ObjectBucketClaim.spec.additionalConfig added,
+#   with maxSize set to 1G
+#
+---
+apiVersion: objectbucket.io/v1alpha1
+kind: ObjectBucketClaim
+metadata:
+  name: loki-bucket
+  namespace: logs
+spec:
+  generateBucketName: loki
+  storageClassName: kubedemo-s3-bucket
+  additionalConfig:
+    maxSize: "1G"

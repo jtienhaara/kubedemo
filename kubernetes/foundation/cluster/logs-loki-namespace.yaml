@@ -1,0 +1,8 @@
+#
+# Namespace for Grafana Loki and Promtail.
+#
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: logs

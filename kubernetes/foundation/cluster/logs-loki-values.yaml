@@ -15,81 +15,11 @@
 #
 # Modifications made to the original:
 #
-global:
-  image:
-    # -- Overrides the Docker registry globally for all images
-    registry: null
-  # -- Overrides the priorityClassName for all pods
-  priorityClassName: null
-  # -- configures cluster domain ("cluster.local" by default)
-  clusterDomain: "cluster.local"
-  # -- configures DNS service name
-  dnsService: "kube-dns"
-  # -- configures DNS service namespace
-  dnsNamespace: "kube-system"
-# -- Overrides the chart's name
-nameOverride: null
-# -- Overrides the chart's computed fullname
-fullnameOverride: null
-# -- Overrides the chart's cluster label
-clusterLabelOverride: null
-# -- Image pull secrets for Docker images
-imagePullSecrets: []
-kubectlImage:
-  # -- The Docker registry
-  registry: docker.io
-  # -- Docker image repository
-  repository: bitnami/kubectl
-  # -- Overrides the image tag whose default is the chart's appVersion
-  tag: null
-  # -- Overrides the image tag with an image digest
-  digest: null
-  # -- Docker image pull policy
-  pullPolicy: IfNotPresent
+# - Deleted unwanted fields.
+# - loki.auth_enabled changed from true to false, since we'll do authentication
+#   and authorization via Istio and Ory Oathkeeper.
+#
 loki:
-  # Configures the readiness probe for all of the Loki pods
-  readinessProbe:
-    httpGet:
-      path: /ready
-      port: http-metrics
-    initialDelaySeconds: 30
-    timeoutSeconds: 1
-  image:
-    # -- The Docker registry
-    registry: docker.io
-    # -- Docker image repository
-    repository: grafana/loki
-    # -- Overrides the image tag whose default is the chart's appVersion
-    # TODO: needed for 3rd target backend functionality
-    # revert to null or latest once this behavior is relased
-    tag: null
-    # -- Overrides the image tag with an image digest
-    digest: null
-    # -- Docker image pull policy
-    pullPolicy: IfNotPresent
-  # -- Common annotations for all deployments/StatefulSets
-  annotations: {}
-  # -- Common annotations for all pods
-  podAnnotations: {}
-  # -- Common labels for all pods
-  podLabels: {}
-  # -- The number of old ReplicaSets to retain to allow rollback
-  revisionHistoryLimit: 10
-  # -- The SecurityContext for Loki pods
-  podSecurityContext:
-    fsGroup: 10001
-    runAsGroup: 10001
-    runAsNonRoot: true
-    runAsUser: 10001
-  # -- The SecurityContext for Loki containers
-  containerSecurityContext:
-    readOnlyRootFilesystem: true
-    capabilities:
-      drop:
-        - ALL
-    allowPrivilegeEscalation: false
-  # -- Should enableServiceLinks be enabled. Default to enable
-  enableServiceLinks: true
   # -- Specify an existing secret containing loki configuration. If non-empty, overrides `loki.config`
   existingSecretForConfig: ""
   # -- Defines what kind of object stores the configuration, a ConfigMap or a Secret.
@@ -98,162 +28,8 @@ loki:
   configStorageType: ConfigMap
   # -- Name of the Secret or ConfigMap that contains the configuration (used for naming even if config is internal).
   externalConfigSecretName: '{{ include "loki.name" . }}'
-  # -- Config file contents for Loki
-  # @default -- See values.yaml
-  config: |
-    {{- if .Values.enterprise.enabled}}
-    {{- tpl .Values.enterprise.config . }}
-    {{- else }}
-    auth_enabled: {{ .Values.loki.auth_enabled }}
-    {{- end }}
-
-    {{- with .Values.loki.server }}
-    server:
-      {{- toYaml . | nindent 2}}
-    {{- end}}
-
-    memberlist:
-    {{- if .Values.loki.memberlistConfig }}
-      {{- toYaml .Values.loki.memberlistConfig | nindent 2 }}
-    {{- else }}
-    {{- if .Values.loki.extraMemberlistConfig}}
-    {{- toYaml .Values.loki.extraMemberlistConfig | nindent 2}}
-    {{- end }}
-      join_members:
-        - {{ include "loki.memberlist" . }}
-        {{- with .Values.migrate.fromDistributed }}
-        {{- if .enabled }}
-        - {{ .memberlistService }}
-        {{- end }}
-        {{- end }}
-    {{- end }}
-
-    {{- with .Values.loki.ingester }}
-    ingester:
-      {{- tpl (. | toYaml) $ | nindent 4 }}
-    {{- end }}
-
-    {{- if .Values.loki.commonConfig}}
-    common:
-    {{- toYaml .Values.loki.commonConfig | nindent 2}}
-      storage:
-      {{- include "loki.commonStorageConfig" . | nindent 4}}
-    {{- end}}
-
-    {{- with .Values.loki.limits_config }}
-    limits_config:
-      {{- tpl (. | toYaml) $ | nindent 4 }}
-    {{- end }}
-
-    runtime_config:
-      file: /etc/loki/runtime-config/runtime-config.yaml
-
-    {{- with .Values.loki.memcached.chunk_cache }}
-    {{- if and .enabled (or .host .addresses) }}
-    chunk_store_config:
-      chunk_cache_config:
-        memcached:
-          batch_size: {{ .batch_size }}
-          parallelism: {{ .parallelism }}
-        memcached_client:
-          {{- if .host }}
-          host: {{ .host }}
-          {{- end }}
-          {{- if .addresses }}
-          addresses: {{ .addresses }}
-          {{- end }}
-          service: {{ .service }}
-    {{- end }}
-    {{- end }}
-
-    {{- if .Values.loki.schemaConfig }}
-    schema_config:
-    {{- toYaml .Values.loki.schemaConfig | nindent 2}}
-    {{- else }}
-    schema_config:
-      configs:
-        - from: 2022-01-11
-          store: boltdb-shipper
-          object_store: {{ .Values.loki.storage.type }}
-          schema: v12
-          index:
-            prefix: loki_index_
-            period: 24h
-    {{- end }}
-
-    {{ include "loki.rulerConfig" . }}
-
-    table_manager:
-      retention_deletes_enabled: {{ .Values.tableManager.retention_deletes_enabled }}
-      retention_period: {{ .Values.tableManager.retention_period }}
-
-    {{- with .Values.loki.memcached.results_cache }}
-    query_range:
-      align_queries_with_step: true
-      {{- if and .enabled (or .host .addresses) }}
-      cache_results: {{ .enabled }}
-      results_cache:
-        cache:
-          default_validity: {{ .default_validity }}
-          memcached_client:
-            {{- if .host }}
-            host: {{ .host }}
-            {{- end }}
-            {{- if .addresses }}
-            addresses: {{ .addresses }}
-            {{- end }}
-            service: {{ .service }}
-            timeout: {{ .timeout }}
-      {{- end }}
-    {{- end }}
-
-    {{- with .Values.loki.storage_config }}
-    storage_config:
-      {{- tpl (. | toYaml) $ | nindent 4 }}
-    {{- end }}
-
-    {{- with .Values.loki.query_scheduler }}
-    query_scheduler:
-      {{- tpl (. | toYaml) $ | nindent 4 }}
-    {{- end }}
-
-    {{- with .Values.loki.compactor }}
-    compactor:
-      {{- tpl (. | toYaml) $ | nindent 4 }}
-    {{- end }}
-
-    {{- with .Values.loki.analytics }}
-    analytics:
-      {{- tpl (. | toYaml) $ | nindent 4 }}
-    {{- end }}
-
-    {{- with .Values.loki.querier }}
-    querier:
-      {{- tpl (. | toYaml) $ | nindent 4 }}
-    {{- end }}
-
-    {{- with .Values.loki.index_gateway }}
-    index_gateway:
-      {{- tpl (. | toYaml) $ | nindent 4 }}
-    {{- end }}
-
-    {{- with .Values.loki.frontend }}
-    frontend:
-      {{- tpl (. | toYaml) $ | nindent 4 }}
-    {{- end }}
-
-    {{- with .Values.loki.frontend_worker }}
-    frontend_worker:
-      {{- tpl (. | toYaml) $ | nindent 4 }}
-    {{- end }}
   # Should authentication be enabled
-  auth_enabled: true
-  # -- memberlist configuration (overrides embedded default)
-  memberlistConfig: {}
-  # -- Extra memberlist configuration
-  extraMemberlistConfig: {}
-  # -- Tenants list to be created on nginx htpasswd file, with name and password keys
-  tenants: []
+  auth_enabled: false
   # -- Check https://grafana.com/docs/loki/latest/configuration/#server for more info on the server configuration.
   server:
     http_listen_port: 3100
@@ -265,19 +41,13 @@ loki:
     reject_old_samples_max_age: 168h
     max_cache_freshness_per_query: 10m
     split_queries_by_interval: 15m
-  # -- Provides a reloadable runtime configuration file for some specific configuration
-  runtimeConfig: {}
-  # -- Check https://grafana.com/docs/loki/latest/configuration/#common_config for more info on how to provide a common configuration
-  commonConfig:
-    path_prefix: /var/loki
-    replication_factor: 3
-    compactor_address: '{{ include "loki.compactorAddress" . }}'
   # -- Storage config. Providing this will automatically populate all necessary storage configs in the templated config.
   storage:
     bucketNames:
       chunks: chunks
       ruler: ruler
       admin: admin
+    !!!
     type: s3
     s3:
       s3: null
