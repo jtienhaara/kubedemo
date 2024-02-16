@@ -97,6 +97,10 @@ echo "    Integrating observability with apps (storage, secrets, and so on):"
 $RUN_DIR/foundation/integrate_observability.sh \
     || exit 7
 
+echo "    Integrating secrets with apps (metrics, secrets storage, and so on):"
+$RUN_DIR/foundation/integrate_secrets.sh \
+    || exit 7
+
 
 echo "SUCCESS Installing the foundation for a Kubernetes demo."
 exit 0
