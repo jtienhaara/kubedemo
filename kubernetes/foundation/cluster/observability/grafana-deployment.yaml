@@ -2,7 +2,9 @@
 # Modified from the original to add dashboards by mounting ConfigMaps:
 #
 # - The Rook/Ceph storage dashboards in
-#   ../observability-grafana-storage-dashboards.yaml
+#   ../integration-grafana-rook-ceph.yaml
+# - The Vault secrets dashboards in
+#   ../integration-grafana-vault.yaml
 #
 apiVersion: apps/v1
 kind: Deployment
@@ -166,6 +168,12 @@ spec:
         - mountPath: /grafana-dashboard-definitions/0/ceph-pools
           name: grafana-dashboard-ceph-pools
           readOnly: false
+        - mountPath: /grafana-dashboard-definitions/0/vault-vso
+          name: grafana-dashboard-vault-vso
+          readOnly: false
+        - mountPath: /grafana-dashboard-definitions/0/vault
+          name: grafana-dashboard-vault
+          readOnly: false
       nodeSelector:
         kubernetes.io/os: linux
       securityContext:
@@ -278,3 +286,9 @@ spec:
       - configMap:
           name: grafana-dashboard-ceph-pools
         name: grafana-dashboard-ceph-pools
+      - configMap:
+          name: grafana-dashboard-vault-vso
+        name: grafana-dashboard-vault-vso
+      - configMap:
+          name: grafana-dashboard-vault
+        name: grafana-dashboard-vault
