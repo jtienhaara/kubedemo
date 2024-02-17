@@ -3,6 +3,11 @@
 #
 #     https://rook.io/docs/rook/v1.13/Storage-Configuration/Object-Storage-RGW/object-storage/#create-a-local-object-store
 #
+# Using HashiCorp Vault to encrypt S3 object storage at rest:
+#
+#     https://rook.io/docs/rook/v1.10/CRDs/Object-Storage/ceph-object-store-crd/#security-settings
+#     https://docs.aws.amazon.com/AmazonS3/latest/userguide/serv-side-encryption.html
+#
 # Modified from the original:
 #
 # - CephObjectStore.metadata.name changed to "kubedemo-s3".
@@ -42,6 +47,27 @@ spec:
       disabled: false
       periodSeconds: 5
       failureThreshold: 2
+  # !!! #
+  # !!! # TODO kubedemo security: HashiCorp Vault kv for S3 object data at rest.
+  # !!! #
+  # !!! security:
+  # !!!   kms:
+  # !!!     connectionDetails:
+  # !!!       KMS_PROVIDER: vault
+  # !!!       VAULT_ADDR: http://vault.vault:8200
+  # !!!       VAULT_BACKEND_PATH: rgw
+  # !!!       VAULT_SECRET_ENGINE: kv
+  # !!!       VAULT_BACKEND: v2
+  # !!!     # name of the k8s secret containing the kms authentication token
+  # !!!     tokenSecretName: rgw-vault-kms-token
+  # !!!   s3:
+  # !!!     connectionDetails:
+  # !!!       KMS_PROVIDER: vault
+  # !!!       VAULT_ADDR: http://vault.vault:8200
+  # !!!       VAULT_BACKEND_PATH: rgw
+  # !!!       VAULT_SECRET_ENGINE: transit
+  # !!!     # name of the k8s secret containing the kms authentication token
+  # !!!     tokenSecretName: rgw-vault-s3-token
 ---
 apiVersion: storage.k8s.io/v1
 kind: StorageClass

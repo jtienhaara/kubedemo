@@ -83,6 +83,10 @@ echo "    Applying mesh (Istio) to \"kubedemo\" cluster:"
 $RUN_DIR/foundation/apply_mesh.sh \
     || exit 5
 
+echo "    Applying log aggregation (Grafana Loki) to \"kubedemo\" cluster:"
+$RUN_DIR/foundation/apply_logs.sh \
+    || exit 5
+
 
 echo "  Finalizing VM setup:"
 
@@ -93,11 +97,11 @@ $RUN_DIR/foundation/vm_reverse_proxy.sh \
 
 echo "  Integrating foundation components:"
 
-echo "    Integrating observability with apps (storage, secrets, and so on):"
+echo "    Integrating observability with apps:"
 $RUN_DIR/foundation/integrate_observability.sh \
     || exit 7
 
-echo "    Integrating secrets with apps (metrics, secrets storage, and so on):"
+echo "    Integrating secrets with apps:"
 $RUN_DIR/foundation/integrate_secrets.sh \
     || exit 7
 
