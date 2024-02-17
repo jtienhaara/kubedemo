@@ -16,6 +16,7 @@
 #
 
 LOKI_VERSION=2.9.4
+LOKI_HELM_CHART_VERSION=5.43.1
 
 echo "Installing logs (Grafana Loki v$LOKI_VERSION)..."
 
@@ -53,7 +54,7 @@ helm repo update \
 echo "  Helm installing Grafana Loki:"
 helm upgrade --install loki \
      grafana/loki \
-     --version $LOKI_VERSION \
+     --version $LOKI_HELM_CHART_VERSION \
      --values $CLUSTER_DIR/logs-loki-values.yaml \
      --namespace logs \
      --wait \

@@ -89,9 +89,12 @@ loki:
       # S3 config comes from Rook/Ceph-created ConfigMap and Secret,
       # when we deployed the logs-loki-storage "loki-bucket".
       #
+      # !!!   Helm installing Grafana Loki:
+      # !!! Release "loki" does not exist. Installing it now.
+      # !!! Error: failed to parse /cloud-init/kubernetes/foundation/cluster/logs-loki-values.yaml: error converting YAML to JSON: yaml: line 92: did not find expected key
       s3: "${BUCKET_NAME}"
       endpoint: "${BUCKET_HOST}:${BUCKET_PORT}""
-      region: null
+      region: "${BUCKET_REGION}-${BUCKET_SUBREGION}"
       secretAccessKey: "${AWS_SECRET_ACCESS_KEY}"
       accessKeyId: "${AWS_ACCESS_KEY_ID}"
       signatureVersion: null
