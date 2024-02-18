@@ -82,11 +82,17 @@ VM_DISK_osd2_IMAGE=''
 VM_DISK_osd3_IMAGE=''
 
 VM_DISK_os_SIZE='40G'
+#
+# Order matters here!  mon1, osd1, mon2, osd2, ...
+# If we get these out of order, then /dev/vdd, /dev/vde, etc
+# will be sized out of order from what we expect
+# in ../kubernetes/foundation/cluster/storage-rook-cluster.yaml.
+#
 VM_DISK_mon1_SIZE='1G'
-VM_DISK_mon2_SIZE='1G'
-VM_DISK_mon3_SIZE='1G'
 VM_DISK_osd1_SIZE='4G'
+VM_DISK_mon2_SIZE='1G'
 VM_DISK_osd2_SIZE='4G'
+VM_DISK_mon3_SIZE='1G'
 VM_DISK_osd3_SIZE='4G'
 
 #
