@@ -1,5 +1,4 @@
 #
-# !!! -config.expand-env=true
 # Copied from Grafana Loki 2.9.4 production helm chart:
 #
 #     https://github.com/grafana/loki/blob/v2.9.4/production/helm/loki/values.yaml
@@ -17,17 +16,20 @@
 # Modifications made to the original:
 #
 # - Deleted unwanted fields.
+# - *.extraEnvFrom added, to retrieve the S3 bucket details from
+#   the ConfigMap and Secret created by Rook/Ceph's ObjectBucketClaim
+#   "loki-bucket" (created in logging-loki-storage.yaml).
+# - *.extraArgs "-config.expand-env" added to expand
+#   environment variables inside /etc/loki/config/config.yaml
+#   inside each container.
 # - loki.auth_enabled changed from true to false, since we'll do authentication
 #   and authorization via Ory Oathkeeper and Istio.
-# - loki.existingSecretForConfig, configStorageType, externalConfigSecretName
-#   set to pull S3 object store credentials created by Rook/Ceph.
+# - loki.storage.bucketNames configured.
+# - loki.storage.s3 configured.
 # - monitoring.dashboards.namespace set to "monitoring", where Grafana
 #   is deployed.
 # - monitoring.rules.namespace set to "monitoring", where Prometheus
 #   is deployed.
-# - *.extraEnvFrom added, to retrieve the S3 bucket details from
-#   the ConfigMap and Secret created by Rook/Ceph's ObjectBucketClaim
-#   "loki-bucket" (created in logging-loki-storage.yaml).
 #
 loki:
   auth_enabled: false
@@ -308,8 +310,11 @@ monitoring:
     annotations: {}
     # -- Additional labels for each `loki-canary` pod
     podLabels: {}
+
     # -- Additional CLI arguments for the `loki-canary' command
-    extraArgs: []
+    extraArgs:
+      - "-config.expand-env"
+
     # -- Environment variables to add to the canary pods
     extraEnv: []
 
@@ -399,8 +404,11 @@ write:
   serviceLabels: {}
   # -- Comma-separated list of Loki modules to load for the write
   targetModule: "write"
+
   # -- Additional CLI args for the write
-  extraArgs: []
+  extraArgs:
+      - "-config.expand-env"
+
   # -- Environment variables to add to the write pods
   extraEnv: []
 
@@ -488,8 +496,11 @@ tableManager:
   podAnnotations: {}
   # -- Labels for table-manager service
   serviceLabels: {}
+
   # -- Additional CLI args for the table-manager
-  extraArgs: []
+  extraArgs:
+      - "-config.expand-env"
+
   # -- Environment variables to add to the table-manager pods
   extraEnv: []
 
@@ -592,8 +603,11 @@ read:
   # 3 target type (read, write, backend). Legacy refers to the 2 target type, so true will
   # run two targets, false will run 3 targets.
   legacyReadTarget: false
+
   # -- Additional CLI args for the read
-  extraArgs: []
+  extraArgs:
+      - "-config.expand-env"
+
   # -- Environment variables to add to the read pods
   extraEnv: []
 
@@ -697,8 +711,11 @@ backend:
   serviceLabels: {}
   # -- Comma-separated list of Loki modules to load for the read
   targetModule: "backend"
+
   # -- Additional CLI args for the backend
-  extraArgs: []
+  extraArgs:
+      - "-config.expand-env"
+
   # -- Environment variables to add to the backend pods
   extraEnv: []
 
@@ -826,8 +843,11 @@ gateway:
   podAnnotations: {}
   # -- Additional labels for gateway pods
   podLabels: {}
+
   # -- Additional CLI args for the gateway
-  extraArgs: []
+  extraArgs:
+      - "-config.expand-env"
+
   # -- Environment variables to add to the gateway pods
   extraEnv: []
   # -- Environment variables from secrets or configmaps to add to the gateway pods
