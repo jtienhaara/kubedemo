@@ -95,6 +95,11 @@ echo "  Adding certificates jetstack Helm repo:"
 helm repo add jetstack https://charts.jetstack.io --force-update \
     || exit 1
 
+echo "  Kicking Helm:"
+helm repo update \
+     --kubeconfig $KUBECONFIG \
+    || exit 1
+
 echo "  Installing trust-manager Helm chart version $TRUST_MANAGER_HELM_CHART_VERSION:"
 helm upgrade --install trust-manager jetstack/trust-manager \
      --version $TRUST_MANAGER_HELM_CHART_VERSION \

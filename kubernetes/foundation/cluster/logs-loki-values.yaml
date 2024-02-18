@@ -26,14 +26,26 @@
 # - monitoring.rules.namespace set to "monitoring", where Prometheus
 #   is deployed.
 #
+global:
+  extraEnvFrom:
+    # Here we get the Rook/Ceph S3 storage bucket AWS_ACCESS_KEY_ID
+    # and AWS_SECRET_ACCESS_KEY variables.
+    - secretRef:
+        name: loki-bucket
+    # Here we pull the "loki-bucket" ConfigMap to grab Rook/Ceph S3 object store
+    # details: BUCKET_NAME, BUCKET_HOST, BUCKET_PORT.
+    - configMapRef:
+        name: loki-bucket
+
 loki:
   #
   # -- Specify an existing secret containing loki configuration.
   #    If non-empty, overrides `loki.config`
-  # Here we get the Rook/Ceph S3 storage bucket AWS_ACCESS_KEY_ID
-  # and AWS_SECRET_ACCESS_KEY variables.
   #
-  existingSecretForConfig: "loki-bucket"
+  # !!! This is not what we want; it seems to make Loki look for an entire
+  # !!! configuration in the specified ConfigMap, ignoring everything
+  # !!! created by the Helm Chart.
+  # existingSecretForConfig: "loki-bucket"
 
   #
   # -- Defines what kind of object stores the configuration,
@@ -47,7 +59,7 @@ loki:
   #    environment injection from a Secret please see
   #    [Secrets](https://kubernetes.io/docs/concepts/configuration/secret/#use-case-as-container-environment-variables).
   #
-  configStorageType: ConfigMap
+  # configStorageType: ConfigMap
   #
   # -- Name of the Secret or ConfigMap that contains the configuration
   #    (used for naming even if config is internal).
@@ -55,7 +67,7 @@ loki:
   # Here we pull the "loki-bucket" ConfigMap to grab Rook/Ceph S3 object store
   # details: BUCKET_NAME, BUCKET_HOST, BUCKET_PORT.
   #
-  externalConfigSecretName: "loki-bucket"
+  # externalConfigSecretName: "loki-bucket"
 
   auth_enabled: false
 
@@ -80,9 +92,9 @@ loki:
   #
   storage:
     bucketNames:
-      chunks: chunks
-      ruler: ruler
-      admin: admin
+      chunks: loki-chunks
+      ruler: loki-ruler
+      admin: loki-admin
     type: s3
     s3:
       #
@@ -96,12 +108,12 @@ loki:
       # https://grafana.com/docs/loki/latest/configure/#s3_storage_config
       # https://grafana.com/docs/loki/latest/setup/install/helm/configure-storage/
       #
-      #!!!s3: "${BUCKET_NAME}"
-      bucketnames:
-        chunks: "${BUCKET_NAME}"
-        ruler: "${BUCKET_NAME}"
-        admin: "${BUCKET_NAME}"
-      endpoint: "${BUCKET_HOST}:${BUCKET_PORT}""
+      # Constructing the s3 URL:
+      # s3: s3://<access_key>:<uri-encoded-secret-access-key>@<region>
+      # https://grafana.com/docs/loki/latest/storage/#aws-deployment-s3-single-store
+      #
+      # !!! ${BUCKET_HOST}:${BUCKET_PORT} s3: "s3://<access_key>:<uri-encoded-secret-access-key>@${BUCKET_REGION}"
+      endpoint: "${BUCKET_HOST}:${BUCKET_PORT}"
       region: "${BUCKET_REGION}-${BUCKET_SUBREGION}"
       secretAccessKey: "${AWS_SECRET_ACCESS_KEY}"
       accessKeyId: "${AWS_ACCESS_KEY_ID}"
@@ -159,6 +171,7 @@ loki:
     scheduler_address: '{{ include "loki.querySchedulerAddress" . }}'
   frontend_worker:
     scheduler_address: '{{ include "loki.querySchedulerAddress" . }}'
+
 enterprise:
   # Enable enterprise features, license must be provided
   enabled: false

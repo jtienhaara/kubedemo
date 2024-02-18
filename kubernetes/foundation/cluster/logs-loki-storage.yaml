@@ -9,12 +9,12 @@
 #
 # Modified from the original:
 #
-# - ObjectBucketClaim.metadata.name changed to "loki-bucket"
-# - ObjectBucketClaim.spec.generateBucketName changed to "loki"
+# - ObjectBucketClaim.metadata.name changed to "loki-chunks", etc.
+# - ObjectBucketClaim.spec.generateBucketName changed to "loki-chunks", etc.
 # - ObjectBucketClaim.spec.storageClassName changed to "kubedemo-s3-bucket"
 #   to reference the StorageClass in storage-rook-s3.yaml
 # - ObjectBucketClaim.spec.additionalConfig added,
-#   with maxSize set to 1G
+#   with maxSize set to 1G for chunks, 256M for ruler and admin
 #
 ---
 apiVersion: objectbucket.io/v1alpha1
@@ -23,7 +23,40 @@ metadata:
   name: loki-bucket
   namespace: logs
 spec:
-  generateBucketName: loki
+  generateBucketName: loki-bucket
   storageClassName: kubedemo-s3-bucket
   additionalConfig:
     maxSize: "1G"
+# !!! ---
+# !!! apiVersion: objectbucket.io/v1alpha1
+# !!! kind: ObjectBucketClaim
+# !!! metadata:
+# !!!   name: loki-chunks
+# !!!   namespace: logs
+# !!! spec:
+# !!!   generateBucketName: loki-chunks
+# !!!   storageClassName: kubedemo-s3-bucket
+# !!!   additionalConfig:
+# !!!     maxSize: "1G"
+# !!! ---
+# !!! apiVersion: objectbucket.io/v1alpha1
+# !!! kind: ObjectBucketClaim
+# !!! metadata:
+# !!!   name: loki-ruler
+# !!!   namespace: logs
+# !!! spec:
+# !!!   generateBucketName: loki-ruler
+# !!!   storageClassName: kubedemo-s3-bucket
+# !!!   additionalConfig:
+# !!!     maxSize: "256M"
+# !!! ---
+# !!! apiVersion: objectbucket.io/v1alpha1
+# !!! kind: ObjectBucketClaim
+# !!! metadata:
+# !!!   name: loki-admin
+# !!!   namespace: logs
+# !!! spec:
+# !!!   generateBucketName: loki-admin
+# !!!   storageClassName: kubedemo-s3-bucket
+# !!!   additionalConfig:
+# !!!     maxSize: "256M"

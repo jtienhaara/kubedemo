@@ -85,6 +85,11 @@ helm repo add secrets-store-csi-driver \
      --kubeconfig $KUBECONFIG \
     || exit 1
 
+echo "  Kicking Helm:"
+helm repo update \
+     --kubeconfig $KUBECONFIG \
+    || exit 1
+
 echo "  Helm installing secrets store CSI driver:"
 helm upgrade --install csi-secrets-store \
      secrets-store-csi-driver/secrets-store-csi-driver \
@@ -109,6 +114,11 @@ kubectl apply \
 echo "  Adding HashiCorp Helm repo:"
 helm repo add hashicorp \
      https://helm.releases.hashicorp.com \
+     --kubeconfig $KUBECONFIG \
+    || exit 1
+
+echo "  Kicking Helm:"
+helm repo update \
      --kubeconfig $KUBECONFIG \
     || exit 1
 
