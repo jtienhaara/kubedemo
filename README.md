@@ -45,12 +45,12 @@ Once your VM is spun up and has everything required:
 
 - The following disks / devices:
   - / Debian 12 Bookworm installed, with at least ~ 10 GB free space
-  - /dev/vdd 1 GB (for Rook/Ceph)
-  - /dev/vde 1 GB (for Rook/Ceph)
-  - /dev/vdf 1 GB (for Rook/Ceph)
-  - /dev/vdg 1 GB (for Rook/Ceph)
-  - /dev/vdh 1 GB (for Rook/Ceph)
-  - /dev/vdi 1 GB (for Rook/Ceph)
+  - /dev/vdd 1 GB (for Rook/Ceph mon 1 on kubedemo-worker)
+  - /dev/vde 4 GB (for Rook/Ceph osd 1 on kubedemo-worker)
+  - /dev/vdf 1 GB (for Rook/Ceph mon 2 on kubedemo-worker2)
+  - /dev/vdg 4 GB (for Rook/Ceph osd 2 on kubedemo-worker2)
+  - /dev/vdh 1 GB (for Rook/Ceph mon 3 on kubedemo-worker3)
+  - /dev/vdi 4 GB (for Rook/Ceph osd 3 on kubedemo-worker3)
   - /cloud-init Contains the "kubernetes" directory from this git repo
 
 And ideally also:
