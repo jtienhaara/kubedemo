@@ -3,10 +3,19 @@
 #
 # - To add dashboards by mounting ConfigMaps:
 #
+#       Folder "2" "Foundation" (/grafana-dashboard-definitions/2):
+#
 #       - The Rook/Ceph storage dashboards in
 #         ../integration-grafana-rook-ceph.yaml
 #       - The Vault secrets dashboards in
 #         ../integration-grafana-vault.yaml
+#
+#       Folder "1" "Logging" (/grafana-dashboard-definitions/1):
+#
+#       - The dashboards automagically created by installing
+#         Grafana Loki via Helm Chart, from
+#         ../../apply_logs.sh and ../logs-loki-values.yaml,
+#         "loki-dashboards-1" and "loki-dashboards-2".
 #
 # - To change from grafana-storage volume of type emptyDir
 #   to PersistentVolumeClaim backed by rook/ceph.
@@ -181,17 +190,25 @@ spec:
         #
         # Added for kubedemo:
         #
-        - mountPath: /grafana-dashboard-definitions/0/ceph-cluster
+        # Folder "2" "Foundation":
+        - mountPath: /grafana-dashboard-definitions/2/ceph-cluster
           name: grafana-dashboard-ceph-cluster
           readOnly: false
-        - mountPath: /grafana-dashboard-definitions/0/ceph-osd-single
+        - mountPath: /grafana-dashboard-definitions/2/ceph-osd-single
           name: grafana-dashboard-ceph-osd-single
           readOnly: false
-        - mountPath: /grafana-dashboard-definitions/0/ceph-pools
+        - mountPath: /grafana-dashboard-definitions/2/ceph-pools
           name: grafana-dashboard-ceph-pools
           readOnly: false
-        - mountPath: /grafana-dashboard-definitions/0/vault
+        - mountPath: /grafana-dashboard-definitions/2/vault
           name: grafana-dashboard-vault
+          readOnly: false
+        # Folder "1" "Logging":
+        - mountPath: /grafana-dashboard-definitions/1/loki-1
+          name: grafana-dashboard-loki-1
+          readOnly: false
+        - mountPath: /grafana-dashboard-definitions/1/loki-2
+          name: grafana-dashboard-loki-2
           readOnly: false
       nodeSelector:
         kubernetes.io/os: linux
@@ -297,6 +314,7 @@ spec:
       #
       # Added for kubedemo:
       #
+        # Folder "2" "Foundation":
       - configMap:
           name: grafana-dashboard-ceph-cluster
         name: grafana-dashboard-ceph-cluster
@@ -309,3 +327,10 @@ spec:
       - configMap:
           name: grafana-dashboard-vault
         name: grafana-dashboard-vault
+        # Folder "1" "Logging":
+      - configMap:
+          name: loki-dashboards-1
+        name: grafana-dashboard-loki-1
+      - configMap:
+          name: loki-dashboards-2
+        name: grafana-dashboard-loki-2

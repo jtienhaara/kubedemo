@@ -3,9 +3,16 @@
 #
 #     https://grafana.com/docs/loki/latest/send-data/promtail/installation/#install-as-kubernetes-daemonset-recommended
 #
+# Promtail 2.9.4 container image:
+#
+#     https://hub.docker.com/layers/grafana/promtail/2.9.4/images/sha256-c46f3611eaaafcbc4a695200a9d57a1ebaa78d425590d73ee62d892a99c4455f?context=explore
+#
 # Modifications made to the original:
 #
-# - Changed "{YOUR_LOKI_ENDPOINT}" to "!!!".
+# - Changed image from "grafana/promtail" to pin down
+#   version "grafana/promtail:2.9.4".
+#   
+# - Changed "{YOUR_LOKI_ENDPOINT}" to "loki-write:3100", and https to http.
 #
 --- # Daemonset.yaml
 apiVersion: apps/v1
@@ -24,7 +31,7 @@ spec:
       serviceAccount: promtail-serviceaccount
       containers:
       - name: promtail-container
-        image: grafana/promtail
+        image: grafana/promtail:2.9.4
         args:
         - -config.file=/etc/promtail/promtail.yaml
         env: 
@@ -62,7 +69,7 @@ data:
       grpc_listen_port: 0
 
     clients:
-    - url: https://{YOUR_LOKI_ENDPOINT}/loki/api/v1/push
+    - url: http://loki-write:3100/loki/api/v1/push
 
     positions:
       filename: /tmp/positions.yaml

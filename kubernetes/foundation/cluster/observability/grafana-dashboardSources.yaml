@@ -1,3 +1,14 @@
+#
+# Changes made to the original:
+#
+# - Changed .providers[0].folder from "Default" to "Cluster", to reflect
+#   that it's where the kube-prometheus built-in Kubernetes dashboards live.
+#
+# - Added .providers[1] "Foundation" for Rook/Ceph storage metrics,
+#   HashiCorp Vault metrics, and so on.
+#
+# - Added .providers[2] "Logging" for Grafana-Loki logs and metrics.
+#
 apiVersion: v1
 data:
   dashboards.yaml: |-
@@ -5,11 +16,31 @@ data:
         "apiVersion": 1,
         "providers": [
             {
-                "folder": "Default",
+                "folder": "Cluster",
                 "folderUid": "",
                 "name": "0",
                 "options": {
                     "path": "/grafana-dashboard-definitions/0"
+                },
+                "orgId": 1,
+                "type": "file"
+            },
+            {
+                "folder": "Foundation",
+                "folderUid": "",
+                "name": "2",
+                "options": {
+                    "path": "/grafana-dashboard-definitions/2"
+                },
+                "orgId": 1,
+                "type": "file"
+            },
+            {
+                "folder": "Logging",
+                "folderUid": "",
+                "name": "1",
+                "options": {
+                    "path": "/grafana-dashboard-definitions/1"
                 },
                 "orgId": 1,
                 "type": "file"

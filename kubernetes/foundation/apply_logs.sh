@@ -61,5 +61,11 @@ helm upgrade --install loki \
      --kubeconfig $KUBECONFIG \
     || exit 1
 
+echo "  Applying Grafana Promtail manifest:"
+kubectl apply \
+        --filename $CLUSTER_DIR/logs-promtail.yaml \
+        --kubeconfig $KUBECONFIG \
+    || exit 1
+
 echo "SUCCESS Installing logs (Grafana Loki v$LOKI_VERSION)."
 exit 0
