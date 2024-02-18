@@ -75,6 +75,10 @@ echo "    Applying secrets (HashiCorp Vault) to \"kubedemo\" cluster:"
 $RUN_DIR/foundation/apply_secrets.sh \
     || exit 5
 
+echo "    Unsealing secrets (HashiCorp Vault):"
+$RUN_DIR/foundation/unseal_secrets.sh \
+    || exit 5
+
 echo "    Applying load balancer (MetalLB) to \"kubedemo\" cluster:"
 $RUN_DIR/foundation/apply_load_balancer.sh \
     || exit 5
