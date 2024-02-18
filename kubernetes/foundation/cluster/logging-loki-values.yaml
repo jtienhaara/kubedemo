@@ -72,7 +72,7 @@ loki:
       # https://grafana.com/docs/loki/latest/storage/#aws-deployment-s3-single-store
       #
       endpoint: "${BUCKET_HOST}:${BUCKET_PORT}"
-      region: "${BUCKET_REGION}-${BUCKET_SUBREGION}"
+      region: "${BUCKET_REGION}"
       secretAccessKey: "${AWS_SECRET_ACCESS_KEY}"
       accessKeyId: "${AWS_ACCESS_KEY_ID}"
       signatureVersion: null
@@ -310,25 +310,12 @@ monitoring:
     annotations: {}
     # -- Additional labels for each `loki-canary` pod
     podLabels: {}
-
     # -- Additional CLI arguments for the `loki-canary' command
-    extraArgs:
-      - "-config.expand-env"
-
+    extraArgs: []
     # -- Environment variables to add to the canary pods
     extraEnv: []
-
     # -- Environment variables from secrets or configmaps to add to the canary pods
-    extraEnvFrom:
-      # Here we get the Rook/Ceph S3 storage bucket AWS_ACCESS_KEY_ID
-      # and AWS_SECRET_ACCESS_KEY variables.
-      - secretRef:
-          name: loki-bucket
-      # Here we pull the ConfigMaps to grab Rook/Ceph S3 object store
-      # details: BUCKET_NAME, BUCKET_HOST, BUCKET_PORT.
-      - configMapRef:
-          name: loki-bucket
-
+    extraEnvFrom: []
     # -- Resource requests and limits for the canary
     resources: {}
     # -- Node selector for canary pods
