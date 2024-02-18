@@ -35,6 +35,9 @@
 #           - /dev/vdg
 #           - /dev/vdh
 #           - /dev/vdi
+#     - Use 2 StorageClasses: rook-storage-mon (1Gi PVs) and rook-storage-osd
+#       (4Gi PVs), so that the OSD backing storage will not accidentally
+#       be bound to a 1Gi disk.
 #     - Reduce the size of each mon and osd backing volume from 10Gi to 1Gi/4Gi.
 #     - Uncomment the OSD daemon limits and OSD prepare limits
 #       for resource consumption by Rook/Ceph Pods.
@@ -66,16 +69,26 @@
 kind: StorageClass
 apiVersion: storage.k8s.io/v1
 metadata:
-  name: rook-storage
+  name: rook-storage-mon
 provisioner: kubernetes.io/no-provisioner
 volumeBindingMode: WaitForFirstConsumer
 ---
+kind: StorageClass
+apiVersion: storage.k8s.io/v1
+metadata:
+  name: rook-storage-osd
+provisioner: kubernetes.io/no-provisioner
+volumeBindingMode: WaitForFirstConsumer
+---
+#
+# mon
+#
 kind: PersistentVolume
 apiVersion: v1
 metadata:
   name: kubedemo0-0
 spec:
-  storageClassName: rook-storage
+  storageClassName: rook-storage-mon
   capacity:
     storage: 1Gi
   accessModes:
@@ -95,12 +108,15 @@ spec:
               values:
                 - kubedemo-worker
 ---
+#
+# osd
+#
 kind: PersistentVolume
 apiVersion: v1
 metadata:
   name: kubedemo0-1
 spec:
-  storageClassName: rook-storage
+  storageClassName: rook-storage-osd
   capacity:
     storage: 4Gi
   accessModes:
@@ -119,12 +135,15 @@ spec:
               values:
                 - kubedemo-worker
 ---
+#
+# mon
+#
 kind: PersistentVolume
 apiVersion: v1
 metadata:
   name: kubedemo1-0
 spec:
-  storageClassName: rook-storage
+  storageClassName: rook-storage-mon
   capacity:
     storage: 1Gi
   accessModes:
@@ -142,12 +161,15 @@ spec:
               values:
                 - kubedemo-worker2
 ---
+#
+# osd
+#
 kind: PersistentVolume
 apiVersion: v1
 metadata:
   name: kubedemo1-1
 spec:
-  storageClassName: rook-storage
+  storageClassName: rook-storage-osd
   capacity:
     storage: 4Gi
   accessModes:
@@ -165,12 +187,15 @@ spec:
               values:
                 - kubedemo-worker2
 ---
+#
+# mon
+#
 kind: PersistentVolume
 apiVersion: v1
 metadata:
   name: kubedemo2-0
 spec:
-  storageClassName: rook-storage
+  storageClassName: rook-storage-mon
   capacity:
     storage: 1Gi
   accessModes:
@@ -188,12 +213,15 @@ spec:
               values:
                 - kubedemo-worker3
 ---
+#
+# osd
+#
 kind: PersistentVolume
 apiVersion: v1
 metadata:
   name: kubedemo2-1
 spec:
-  storageClassName: rook-storage
+  storageClassName: rook-storage-osd
   capacity:
     storage: 4Gi
   accessModes:
@@ -223,7 +251,7 @@ spec:
     allowMultiplePerNode: false
     volumeClaimTemplate:
       spec:
-        storageClassName: rook-storage
+        storageClassName: rook-storage-mon
         resources:
           requests:
             storage: 1Gi
@@ -299,7 +327,7 @@ spec:
                 requests:
                   storage: 4Gi
               # IMPORTANT: Change the storage class depending on your environment
-              storageClassName: rook-storage
+              storageClassName: rook-storage-osd
               volumeMode: Block
               accessModes:
                 - ReadWriteOnce
