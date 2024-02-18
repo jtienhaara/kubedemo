@@ -39,6 +39,10 @@ data:
         - role: pod
       pipeline_stages:
         - docker: {}
+      #
+      # Ugh relabel description (perhaps the only one on the entire internet??):
+      # https://www.slideshare.net/roidelapluie/taking-advantage-of-prometheus-relabeling-109483749
+      #
       relabel_configs:
         - source_labels:
             - __meta_kubernetes_pod_node_name
@@ -64,9 +68,17 @@ data:
           source_labels:
             - __meta_kubernetes_pod_container_name
           target_label: container
-        - replacement: /var/log/pods/*$1/*.log
-          separator: /
+        #
+        # Paths in kind e.g.:
+        # /var/log/pods/logging_loki-backend-1_da473268-0da0-4b20-9c25-7bc95b7581b3/0.log
+        # /var/log/pods/(namespace)_(pod)_(uid)/0.log
+        #
+        - replacement: /var/log/pods/$1_$2_$3/$4/*.log
+          separator: ;
+          regex: '([^;]*);([^;]*);([^;]*);([^;]*)'
           source_labels:
+            - __meta_kubernetes_namespace
+            - __meta_kubernetes_pod_name
             - __meta_kubernetes_pod_uid
             - __meta_kubernetes_pod_container_name
           target_label: __path__
