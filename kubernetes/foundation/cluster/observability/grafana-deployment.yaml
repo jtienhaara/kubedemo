@@ -14,7 +14,7 @@
 #
 #       - The dashboards automagically created by installing
 #         Grafana Loki via Helm Chart, from
-#         ../../apply_logs.sh and ../logs-loki-values.yaml,
+#         ../../apply_logging.sh and ../logging-loki-values.yaml,
 #         "loki-dashboards-1" and "loki-dashboards-2".
 #
 # - To change from grafana-storage volume of type emptyDir

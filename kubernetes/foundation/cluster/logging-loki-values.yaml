@@ -32,43 +32,12 @@ global:
     # and AWS_SECRET_ACCESS_KEY variables.
     - secretRef:
         name: loki-bucket
-    # Here we pull the "loki-bucket" ConfigMap to grab Rook/Ceph S3 object store
+    # Here we pull the ConfigMaps to grab Rook/Ceph S3 object store
     # details: BUCKET_NAME, BUCKET_HOST, BUCKET_PORT.
     - configMapRef:
         name: loki-bucket
 
 loki:
-  #
-  # -- Specify an existing secret containing loki configuration.
-  #    If non-empty, overrides `loki.config`
-  #
-  # !!! This is not what we want; it seems to make Loki look for an entire
-  # !!! configuration in the specified ConfigMap, ignoring everything
-  # !!! created by the Helm Chart.
-  # existingSecretForConfig: "loki-bucket"
-
-  #
-  # -- Defines what kind of object stores the configuration,
-  #    a ConfigMap or a Secret.
-  #    In order to move sensitive information (such as credentials)
-  #    from the ConfigMap/Secret to a more secure location
-  #    (e.g. vault), it is possible to use
-  #    [environment variables in the configuration](https://grafana.com/docs/loki/latest/configuration/#use-environment-variables-in-the-configuration).
-  #    Such environment variables can be then stored in a separate Secret
-  #    and injected via the global.extraEnvFrom value. For details about
-  #    environment injection from a Secret please see
-  #    [Secrets](https://kubernetes.io/docs/concepts/configuration/secret/#use-case-as-container-environment-variables).
-  #
-  # configStorageType: ConfigMap
-  #
-  # -- Name of the Secret or ConfigMap that contains the configuration
-  #    (used for naming even if config is internal).
-  #
-  # Here we pull the "loki-bucket" ConfigMap to grab Rook/Ceph S3 object store
-  # details: BUCKET_NAME, BUCKET_HOST, BUCKET_PORT.
-  #
-  # externalConfigSecretName: "loki-bucket"
-
   auth_enabled: false
 
   #
@@ -92,18 +61,14 @@ loki:
   #
   storage:
     bucketNames:
-      chunks: loki-chunks
-      ruler: loki-ruler
-      admin: loki-admin
+      chunks: loki-bucket
+      ruler: loki-bucket
+      admin: loki-bucket
     type: s3
     s3:
       #
       # S3 config comes from Rook/Ceph-created ConfigMap and Secret,
-      # when we deployed the logs-loki-storage "loki-bucket".
-      #
-      # !!!   Helm installing Grafana Loki:
-      # !!! Release "loki" does not exist. Installing it now.
-      # !!! Error: failed to parse /cloud-init/kubernetes/foundation/cluster/logs-loki-values.yaml: error converting YAML to JSON: yaml: line 92: did not find expected key
+      # when we deployed the logging-loki-storage "loki-bucket".
       #
       # https://grafana.com/docs/loki/latest/configure/#s3_storage_config
       # https://grafana.com/docs/loki/latest/setup/install/helm/configure-storage/
@@ -112,7 +77,6 @@ loki:
       # s3: s3://<access_key>:<uri-encoded-secret-access-key>@<region>
       # https://grafana.com/docs/loki/latest/storage/#aws-deployment-s3-single-store
       #
-      # !!! ${BUCKET_HOST}:${BUCKET_PORT} s3: "s3://<access_key>:<uri-encoded-secret-access-key>@${BUCKET_REGION}"
       endpoint: "${BUCKET_HOST}:${BUCKET_PORT}"
       region: "${BUCKET_REGION}-${BUCKET_SUBREGION}"
       secretAccessKey: "${AWS_SECRET_ACCESS_KEY}"
@@ -322,6 +286,7 @@ monitoring:
       enableConfigReadAPI: false
       # -- The name of the PriorityClass for GrafanaAgent pods
       priorityClassName: null
+
     # PodLogs configuration
     podLogs:
       # -- PodLogs annotations
@@ -331,6 +296,7 @@ monitoring:
       # -- PodLogs relabel configs to apply to samples before scraping
       # https://github.com/prometheus-operator/prometheus-operator/blob/master/Documentation/api.md#relabelconfig
       relabelings: []
+
     # LogsInstance configuration
     logsInstance:
       # -- LogsInstance annotations
@@ -339,6 +305,7 @@ monitoring:
       labels: {}
       # -- Additional clients for remote write
       clients: null
+
   # The Loki canary pushes logs to and queries from this loki installation to test
   # that it's working correctly
   lokiCanary:

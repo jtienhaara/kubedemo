@@ -1,7 +1,7 @@
 #
 # Changes made to the original:
 #
-# - Added "loki" datasource for logs.
+# - Added "loki" datasource for logging.
 #
 apiVersion: v1
 kind: Secret
@@ -33,7 +33,7 @@ stringData:
                 "name": "loki",
                 "orgId": 1,
                 "type": "loki",
-                "url": "http://loki-read.logs:3100",
+                "url": "http://loki-gateway.logging:3100",
                 "version": 1
             }
         ]

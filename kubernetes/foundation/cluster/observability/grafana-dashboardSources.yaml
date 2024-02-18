@@ -7,7 +7,7 @@
 # - Added .providers[1] "Foundation" for Rook/Ceph storage metrics,
 #   HashiCorp Vault metrics, and so on.
 #
-# - Added .providers[2] "Logging" for Grafana-Loki logs and metrics.
+# - Added .providers[2] "Logging" for Grafana-Loki logging and metrics.
 #
 apiVersion: v1
 data:

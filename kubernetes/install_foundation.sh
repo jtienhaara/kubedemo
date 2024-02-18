@@ -84,7 +84,7 @@ $RUN_DIR/foundation/apply_mesh.sh \
     || exit 5
 
 echo "    Applying log aggregation (Grafana Loki) to \"kubedemo\" cluster:"
-$RUN_DIR/foundation/apply_logs.sh \
+$RUN_DIR/foundation/apply_logging.sh \
     || exit 5
 
 

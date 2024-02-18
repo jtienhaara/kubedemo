@@ -9,59 +9,17 @@
 #
 # Modifications made to the original:
 #
+# - Changed "default" namespace to "logging" namespace.
 # - Changed image from "grafana/promtail" to pin down
 #   version "grafana/promtail:2.9.4".
-#   
-# - Changed "{YOUR_LOKI_ENDPOINT}" to "loki-write:3100", and https to http.
+# - Changed "{YOUR_LOKI_ENDPOINT}" to "loki-gateway:80", and https to http.
 #
---- # Daemonset.yaml
-apiVersion: apps/v1
-kind: DaemonSet
-metadata:
-  name: promtail-daemonset
-spec:
-  selector:
-    matchLabels:
-      name: promtail
-  template:
-    metadata:
-      labels:
-        name: promtail
-    spec:
-      serviceAccount: promtail-serviceaccount
-      containers:
-      - name: promtail-container
-        image: grafana/promtail:2.9.4
-        args:
-        - -config.file=/etc/promtail/promtail.yaml
-        env: 
-        - name: 'HOSTNAME' # needed when using kubernetes_sd_configs
-          valueFrom:
-            fieldRef:
-              fieldPath: 'spec.nodeName'
-        volumeMounts:
-        - name: logs
-          mountPath: /var/log
-        - name: promtail-config
-          mountPath: /etc/promtail
-        - mountPath: /var/lib/docker/containers
-          name: varlibdockercontainers
-          readOnly: true
-      volumes:
-      - name: logs
-        hostPath:
-          path: /var/log
-      - name: varlibdockercontainers
-        hostPath:
-          path: /var/lib/docker/containers
-      - name: promtail-config
-        configMap:
-          name: promtail-config
 --- # configmap.yaml
 apiVersion: v1
 kind: ConfigMap
 metadata:
   name: promtail-config
+  namespace: logging
 data:
   promtail.yaml: |
     server:
@@ -69,7 +27,7 @@ data:
       grpc_listen_port: 0
 
     clients:
-    - url: http://loki-write:3100/loki/api/v1/push
+    - url: http://loki-gateway:80/loki/api/v1/push
 
     positions:
       filename: /tmp/positions.yaml
@@ -118,33 +76,81 @@ apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
   name: promtail-clusterrole
+  namespace: logging
 rules:
-  - apiGroups: [""]
+  - apiGroups:
+      - ""
     resources:
-    - nodes
-    - services
-    - pods
+      - nodes
+      - services
+      - pods
     verbs:
-    - get
-    - watch
-    - list
+      - get
+      - watch
+      - list
 
 --- # ServiceAccount.yaml
 apiVersion: v1
 kind: ServiceAccount
 metadata:
   name: promtail-serviceaccount
+  namespace: logging
 
 --- # Rolebinding.yaml
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
   name: promtail-clusterrolebinding
+  namespace: logging
 subjects:
     - kind: ServiceAccount
       name: promtail-serviceaccount
-      namespace: default
+      namespace: logging
 roleRef:
     kind: ClusterRole
     name: promtail-clusterrole
     apiGroup: rbac.authorization.k8s.io
+--- # Daemonset.yaml
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: promtail
+  namespace: logging
+spec:
+  selector:
+    matchLabels:
+      name: promtail
+  template:
+    metadata:
+      labels:
+        name: promtail
+    spec:
+      serviceAccount: promtail-serviceaccount
+      containers:
+      - name: promtail-container
+        image: grafana/promtail:2.9.4
+        args:
+        - -config.file=/etc/promtail/promtail.yaml
+        env: 
+        - name: 'HOSTNAME' # needed when using kubernetes_sd_configs
+          valueFrom:
+            fieldRef:
+              fieldPath: 'spec.nodeName'
+        volumeMounts:
+        - name: logs
+          mountPath: /var/log
+        - name: promtail-config
+          mountPath: /etc/promtail
+        - mountPath: /var/lib/docker/containers
+          name: varlibdockercontainers
+          readOnly: true
+      volumes:
+      - name: logs
+        hostPath:
+          path: /var/log
+      - name: varlibdockercontainers
+        hostPath:
+          path: /var/lib/docker/containers
+      - name: promtail-config
+        configMap:
+          name: promtail-config

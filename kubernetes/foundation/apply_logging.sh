@@ -18,14 +18,14 @@
 LOKI_VERSION=2.9.4
 LOKI_HELM_CHART_VERSION=5.43.1
 
-echo "Installing logs (Grafana Loki v$LOKI_VERSION)..."
+echo "Installing logging (Grafana Loki v$LOKI_VERSION)..."
 
 CLUSTER_DIR=/cloud-init/kubernetes/foundation/cluster
 KUBECONFIG=$HOME/.kube/kubeconfig-kubedemo.yaml
 
-echo "  Creating logs namespace for Grafana Loki log aggregation:"
+echo "  Creating logging namespace for Grafana Loki log aggregation:"
 kubectl apply \
-        --filename $CLUSTER_DIR/logs-loki-namespace.yaml \
+        --filename $CLUSTER_DIR/logging-loki-namespace.yaml \
         --kubeconfig $KUBECONFIG \
     || exit 1
 
@@ -34,9 +34,9 @@ kubectl apply \
 #
 #     https://rook.io/docs/rook/v1.13/Storage-Configuration/Object-Storage-RGW/object-storage/#client-connections
 #
-echo "  Creating object bucket for Grafana Loki logs:"
+echo "  Creating object bucket for Grafana Loki logging:"
 kubectl apply \
-        --filename $CLUSTER_DIR/logs-loki-storage.yaml \
+        --filename $CLUSTER_DIR/logging-loki-storage.yaml \
         --kubeconfig $KUBECONFIG \
     || exit 1
 
@@ -55,17 +55,17 @@ echo "  Helm installing Grafana Loki:"
 helm upgrade --install loki \
      grafana/loki \
      --version $LOKI_HELM_CHART_VERSION \
-     --values $CLUSTER_DIR/logs-loki-values.yaml \
-     --namespace logs \
+     --values $CLUSTER_DIR/logging-loki-values.yaml \
+     --namespace logging \
      --wait \
      --kubeconfig $KUBECONFIG \
     || exit 1
 
 echo "  Applying Grafana Promtail manifest:"
 kubectl apply \
-        --filename $CLUSTER_DIR/logs-promtail.yaml \
+        --filename $CLUSTER_DIR/logging-promtail.yaml \
         --kubeconfig $KUBECONFIG \
     || exit 1
 
-echo "SUCCESS Installing logs (Grafana Loki v$LOKI_VERSION)."
+echo "SUCCESS Installing logging (Grafana Loki v$LOKI_VERSION)."
 exit 0
