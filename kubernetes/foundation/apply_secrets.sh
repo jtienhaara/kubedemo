@@ -136,13 +136,30 @@ helm upgrade --install vault hashicorp/vault \
 # So we use status.phase=Running as our condition instead.
 #
 echo "  Waiting for vault-0, vault-1 and vault-2 Pods to be Running:"
-kubectl wait pod \
+IS_VAULT_RUNNING=false
+for TRY_NUM in 1 2 3
+do
+    kubectl wait pod \
         --selector 'app.kubernetes.io/name=vault' \
 	--for jsonpath='{.status.phase}'=Running \
         --timeout 120s \
 	--namespace vault \
-        --kubeconfig $KUBECONFIG \
-    || exit 1
+        --kubeconfig $KUBECONFIG
+    if test $? -eq 0
+    then
+        IS_VAULT_RUNNING=true
+        break
+    fi
+
+    echo "    Waiting 2 seconds for Vault pods..."
+    sleep 2
+done
+
+if test "$IS_VAULT_RUNNING" != "true"
+then
+    echo "ERROR Vault Pods are still not running." >&2
+    exit 1
+fi
 
 #
 # Now initialize Vault:
