@@ -115,7 +115,7 @@ items:
             "steppedLine": false,
             "targets": [
               {
-                "expr": "sum(count_over_time({namespace=\"$namespace\", app=\"$workload\", instance=~\"$pod\"} |~ \"$search\"[$__interval]))",
+                "expr": "sum(count_over_time({namespace=\"$namespace\", pod=\"$pod\", container=~\"$container\"} |~ \"$search\"[$__interval]))",
                 "refId": "A"
               }
             ],
@@ -184,7 +184,7 @@ items:
             },
             "targets": [
               {
-                "expr": "{namespace=\"$namespace\", app=\"$workload\", instance=~\"$pod\"} |~ \"$search\"",
+                "expr": "{namespace=\"$namespace\", pod=\"$pod\", container=~\"$container\"} |~ \"$search\"",
                 "refId": "A"
               }
             ],
@@ -254,14 +254,14 @@ items:
               "allValue": ".*",
               "current": {},
               "datasource": "${DS_PROMETHEUS}",
-              "definition": "label_values(mixin_pod_workload{namespace=\"$namespace\"}, workload)",
+              "definition": "label_values(kube_pod_info{namespace=\"$namespace\"}, pod)",
               "hide": 0,
               "includeAll": false,
               "label": null,
               "multi": false,
-              "name": "workload",
+              "name": "pod",
               "options": [],
-              "query": "label_values(mixin_pod_workload{namespace=\"$namespace\"}, workload)",
+              "query": "label_values(kube_pod_info{namespace=\"$namespace\"}, pod)",
               "refresh": 1,
               "regex": "",
               "skipUrlSync": false,
@@ -276,14 +276,14 @@ items:
               "allValue": ".*",
               "current": {},
               "datasource": "${DS_PROMETHEUS}",
-              "definition": "label_values(mixin_pod_workload{namespace=\"$namespace\", workload=\"$workload\"}, pod)",
+              "definition": "label_values(kube_pod_container_info{namespace=\"$namespace\", pod=\"$pod\"}, container)",
               "hide": 0,
               "includeAll": true,
               "label": null,
               "multi": false,
-              "name": "pod",
+              "name": "container",
               "options": [],
-              "query": "label_values(mixin_pod_workload{namespace=\"$namespace\", workload=\"$workload\"}, pod)",
+              "query": "label_values(kube_pod_container_info{namespace=\"$namespace\", pod=\"$pod\"}, container)",
               "refresh": 1,
               "regex": "",
               "skipUrlSync": false,
