@@ -30,6 +30,10 @@
 #   is deployed.
 # - monitoring.rules.namespace set to "monitoring", where Prometheus
 #   is deployed.
+# - write.persistence.size changed from 10Gi to 1Gi
+# - write.persistence.storageClass changed from null to kubedemo-block
+# - read.persistence.size changed from 10Gi to 1Gi
+# - read.persistence.storageClass changed from null to kubedemo-block
 #
 loki:
   auth_enabled: false
@@ -156,6 +160,7 @@ rbac:
   pspEnabled: false
   # -- For OpenShift set pspEnabled to 'false' and sccEnabled to 'true' to use the SecurityContextConstraints.
   sccEnabled: false
+
 # -- Section for configuring optional Helm test
 test:
   enabled: true
@@ -342,6 +347,7 @@ monitoring:
       type: RollingUpdate
       rollingUpdate:
         maxUnavailable: 1
+
 # Configuration for the write pod(s)
 write:
   # -- Number of replicas for the write
@@ -451,13 +457,13 @@ write:
     # -- Enable StatefulSetAutoDeletePVC feature
     enableStatefulSetAutoDeletePVC: false
     # -- Size of persistent disk
-    size: 10Gi
+    size: 1Gi
     # -- Storage class to be used.
     # If defined, storageClassName: <storageClass>.
     # If set to "-", storageClassName: "", which disables dynamic provisioning.
     # If empty or set to null, no storageClassName spec is
     # set, choosing the default provisioner (gp2 on AWS, standard on GKE, AWS, and OpenStack).
-    storageClass: null
+    storageClass: kubedemo-block
     # -- Selector for persistent disk
     selector: null
 
@@ -465,78 +471,7 @@ write:
 tableManager:
   # -- Specifies whether the table-manager should be enabled
   enabled: false
-  image:
-    # -- The Docker registry for the table-manager image. Overrides `loki.image.registry`
-    registry: null
-    # -- Docker image repository for the table-manager image. Overrides `loki.image.repository`
-    repository: null
-    # -- Docker image tag for the table-manager image. Overrides `loki.image.tag`
-    tag: null
-  # -- Command to execute instead of defined in Docker image
-  command: null
-  # -- The name of the PriorityClass for table-manager pods
-  priorityClassName: null
-  # -- Labels for table-manager pods
-  podLabels: {}
-  # -- Annotations for table-manager deployment
-  annotations: {}
-  # -- Annotations for table-manager pods
-  podAnnotations: {}
-  # -- Labels for table-manager service
-  serviceLabels: {}
 
-  # -- Additional CLI args for the table-manager
-  extraArgs:
-      - "-config.expand-env"
-
-  # -- Environment variables to add to the table-manager pods
-  extraEnv: []
-
-  # -- Environment variables from secrets or configmaps to add to the table-manager pods
-  extraEnvFrom:
-    # Here we get the Rook/Ceph S3 storage bucket AWS_ACCESS_KEY_ID
-    # and AWS_SECRET_ACCESS_KEY variables.
-    - secretRef:
-        name: loki-bucket
-    # Here we pull the ConfigMaps to grab Rook/Ceph S3 object store
-    # details: BUCKET_NAME, BUCKET_HOST, BUCKET_PORT.
-    - configMapRef:
-        name: loki-bucket
-
-  # -- Volume mounts to add to the table-manager pods
-  extraVolumeMounts: []
-  # -- Volumes to add to the table-manager pods
-  extraVolumes: []
-  # -- Resource requests and limits for the table-manager
-  resources: {}
-  # -- Containers to add to the table-manager pods
-  extraContainers: []
-  # -- Grace period to allow the table-manager to shutdown before it is killed
-  terminationGracePeriodSeconds: 30
-  # -- Affinity for table-manager pods. Passed through `tpl` and, thus, to be configured as string
-  # @default -- Hard node and soft zone anti-affinity
-  affinity: |
-    podAntiAffinity:
-      requiredDuringSchedulingIgnoredDuringExecution:
-        - labelSelector:
-            matchLabels:
-              {{- include "loki.tableManagerSelectorLabels" . | nindent 10 }}
-          topologyKey: kubernetes.io/hostname
-      preferredDuringSchedulingIgnoredDuringExecution:
-        - weight: 100
-          podAffinityTerm:
-            labelSelector:
-              matchLabels:
-                {{- include "loki.tableManagerSelectorLabels" . | nindent 12 }}
-            topologyKey: failure-domain.beta.kubernetes.io/zone
-  # -- Node selector for table-manager pods
-  nodeSelector: {}
-  # -- Tolerations for table-manager pods
-  tolerations: []
-  # -- Enable deletes by retention
-  retention_deletes_enabled: false
-  # -- Set retention period
-  retention_period: 0
 # Configuration for the read pod(s)
 read:
   # -- Number of replicas for the read
@@ -639,13 +574,13 @@ read:
     # -- Enable StatefulSetAutoDeletePVC feature
     enableStatefulSetAutoDeletePVC: true
     # -- Size of persistent disk
-    size: 10Gi
+    size: 1Gi
     # -- Storage class to be used.
     # If defined, storageClassName: <storageClass>.
     # If set to "-", storageClassName: "", which disables dynamic provisioning.
     # If empty or set to null, no storageClassName spec is
     # set, choosing the default provisioner (gp2 on AWS, standard on GKE, AWS, and OpenStack).
-    storageClass: null
+    storageClass: kubedemo-block
     # -- Selector for persistent disk
     selector: null
 
@@ -773,7 +708,7 @@ ingress:
 # Configuration for the memberlist service
 memberlist:
   service:
-    publishNotReadyAddresses: false
+    publishNotReadyAddresses: true
 
 # Configuration for the gateway
 gateway:
@@ -962,6 +897,7 @@ gateway:
     # @default -- See values.yaml
     file: |
       {{- include "loki.nginxFile" . | indent 2 -}}
+
 networkPolicy:
   # -- Specifies whether Network Policies should be created
   enabled: false
