@@ -45,6 +45,10 @@ echo "    Installing networking tools:"
 $RUN_DIR/foundation/tools_networking.sh \
     || exit 3
 
+echo "    Installing data tools:"
+$RUN_DIR/foundation/tools_data.sh \
+    || exit 3
+
 
 echo "  Configuring OS:"
 

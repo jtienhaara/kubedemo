@@ -16,6 +16,10 @@
 #         Grafana Loki via Helm Chart, from
 #         ../../apply_logging.sh and ../logging-loki-values.yaml,
 #         "loki-dashboards-1" and "loki-dashboards-2".
+#       - Also, for now at least, the Loki dashboard in
+#         ../integration-grafana-logs.yaml (until the main logging
+#         dashboard from the Grafana Loki Helm Chart is configured
+#         properly; so far it shows no data :/ ).
 #
 # - To change from grafana-storage volume of type emptyDir
 #   to PersistentVolumeClaim backed by rook/ceph.
@@ -210,6 +214,9 @@ spec:
         - mountPath: /grafana-dashboard-definitions/1/loki-2
           name: grafana-dashboard-loki-2
           readOnly: false
+        - mountPath: /grafana-dashboard-definitions/1/loki-logs
+          name: grafana-dashboard-logs
+          readOnly: false
       nodeSelector:
         kubernetes.io/os: linux
       securityContext:
@@ -334,3 +341,6 @@ spec:
       - configMap:
           name: loki-dashboards-2
         name: grafana-dashboard-loki-2
+      - configMap:
+          name: grafana-dashboard-logs
+        name: grafana-dashboard-logs
