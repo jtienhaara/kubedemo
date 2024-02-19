@@ -38,10 +38,17 @@ data:
       kubernetes_sd_configs:
         - role: pod
       pipeline_stages:
+        #
+        # Use standard docker log format
+        # https://grafana.com/docs/loki/latest/send-data/promtail/stages/docker/
+        #
         - docker: {}
       #
       # Ugh relabel description (perhaps the only one on the entire internet??):
       # https://www.slideshare.net/roidelapluie/taking-advantage-of-prometheus-relabeling-109483749
+      #
+      # Available labels:
+      # https://grafana.com/docs/loki/latest/send-data/promtail/configuration/#pod
       #
       relabel_configs:
         - source_labels:
@@ -50,7 +57,7 @@ data:
         - action: labelmap
           regex: __meta_kubernetes_pod_label_(.+)
         - action: replace
-          replacement: $1
+          replacement: ${1}
           separator: /
           source_labels:
             - __meta_kubernetes_namespace
@@ -73,7 +80,7 @@ data:
         # /var/log/pods/logging_loki-backend-1_da473268-0da0-4b20-9c25-7bc95b7581b3/0.log
         # /var/log/pods/(namespace)_(pod)_(uid)/0.log
         #
-        - replacement: /var/log/pods/*$1/$2/*.log
+        - replacement: /var/log/pods/*${1}/${2}/*.log
           separator: ;
           regex: '([^;]*);([^;]*)'
           source_labels:

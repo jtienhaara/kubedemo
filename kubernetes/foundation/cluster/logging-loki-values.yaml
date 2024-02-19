@@ -403,7 +403,7 @@ write:
 
   # -- Additional CLI args for the write
   extraArgs:
-      - "-config.expand-env"
+    - "-config.expand-env"
 
   # -- Environment variables to add to the write pods
   extraEnv: []
@@ -531,7 +531,7 @@ read:
 
   # -- Additional CLI args for the read
   extraArgs:
-      - "-config.expand-env"
+    - "-config.expand-env"
 
   # -- Environment variables to add to the read pods
   extraEnv: []
@@ -639,7 +639,7 @@ backend:
 
   # -- Additional CLI args for the backend
   extraArgs:
-      - "-config.expand-env"
+    - "-config.expand-env"
 
   # -- Environment variables to add to the backend pods
   extraEnv: []
@@ -771,7 +771,7 @@ gateway:
 
   # -- Additional CLI args for the gateway
   extraArgs:
-      - "-config.expand-env"
+    - "-config.expand-env"
 
   # -- Environment variables to add to the gateway pods
   extraEnv: []
