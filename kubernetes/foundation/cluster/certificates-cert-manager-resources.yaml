@@ -10,6 +10,10 @@
 #     https://github.com/cert-manager/cert-manager/blob/v1.14.1/LICENSE
 #     https://github.com/cert-manager/cert-manager/blob/v1.14.1/LICENSES
 #
+# Changes made from the original:
+#
+# - Added istio-injection: disabled namespace label (just to be explicit).
+#
 # Copyright 2022 The cert-manager Authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -27,6 +31,8 @@
 apiVersion: v1
 kind: Namespace
 metadata:
+  labels:
+    istio-injection: disabled
   name: cert-manager
 ---
 # Source: cert-manager/templates/crds.yaml

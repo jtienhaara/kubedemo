@@ -1,7 +1,13 @@
+#
+# Changes made to the original:
+#
+# - Added istio-injection: disabled (just to be explicit).
+#
 apiVersion: v1
 kind: Namespace
 metadata:
   labels:
     pod-security.kubernetes.io/warn: privileged
     pod-security.kubernetes.io/warn-version: latest
+    istio-injection: disabled
   name: monitoring

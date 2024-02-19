@@ -7,7 +7,7 @@
 #
 #     https://github.com/rook/rook?tab=Apache-2.0-1-ov-file
 #
-# No changes, other than this comment header, have been made to the original.
+# - Added istio-injection: disabled (just to be explicit).
 #
 ####################################################################################################
 # Create the common resources that are necessary to start the operator and the ceph cluster.
@@ -20,6 +20,8 @@
 apiVersion: v1
 kind: Namespace
 metadata:
+  labels:
+    istio-injection: disabled
   name: rook-ceph # namespace:cluster
 ---
 kind: ClusterRole
