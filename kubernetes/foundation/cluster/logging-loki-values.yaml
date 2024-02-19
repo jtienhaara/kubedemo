@@ -34,6 +34,8 @@
 # - write.persistence.storageClass changed from null to kubedemo-block
 # - read.persistence.size changed from 10Gi to 1Gi
 # - read.persistence.storageClass changed from null to kubedemo-block
+# - backend.persistence.size changed from 10Gi to 1Gi
+# - backend.persistence.storageClass changed from null to kubedemo-block
 #
 loki:
   auth_enabled: false
@@ -684,13 +686,13 @@ backend:
     # -- Enable StatefulSetAutoDeletePVC feature
     enableStatefulSetAutoDeletePVC: true
     # -- Size of persistent disk
-    size: 10Gi
+    size: 1Gi
     # -- Storage class to be used.
     # If defined, storageClassName: <storageClass>.
     # If set to "-", storageClassName: "", which disables dynamic provisioning.
     # If empty or set to null, no storageClassName spec is
     # set, choosing the default provisioner (gp2 on AWS, standard on GKE, AWS, and OpenStack).
-    storageClass: null
+    storageClass: kubedemo-block
     # -- Selector for persistent disk
     selector: null
 
