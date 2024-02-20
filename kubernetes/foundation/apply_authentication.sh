@@ -26,6 +26,16 @@ echo "Installing authentication (ory oathkeeper)..."
 CLUSTER_DIR=/cloud-init/kubernetes/foundation/cluster
 KUBECONFIG=$HOME/.kube/kubeconfig-kubedemo.yaml
 
+echo "  Applying auth namespace:"
+kubectl apply \
+        --filename $CLUSTER_DIR/authentication-ory-oathkeeper-namespace.yaml \
+    || exit 1
+
+echo "  Applying ory-oathkeeper-access-rules ConfigMap:"
+kubectl apply \
+        --filename $CLUSTER_DIR/authentication-ory-oathkeeper-configmap.yaml \
+    || exit 1
+
 #
 # ory oathkeeper authentication:
 #
@@ -42,6 +52,7 @@ echo "  Installing Ory Oathkeeper Helm chart version $ORY_OATHKEEPER_HELM_CHART_
 helm upgrade --install oathkeeper ory/oathkeeper \
      --version $ORY_OATHKEEPER_HELM_CHART_VERSION \
      --values $CLUSTER_DIR/authentication-ory-oathkeeper-values.yaml \
+     --namespace auth \
      --wait \
      --kubeconfig $KUBECONFIG \
     || exit 1

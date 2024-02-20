@@ -1,0 +1,10 @@
+#
+# Namespace for Ory Oathkeeper and Kratos and other auth*/identity services.
+#
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  labels:
+    istio-injection: disabled
+  name: auth
