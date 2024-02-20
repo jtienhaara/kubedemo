@@ -12,7 +12,7 @@
 #
 # Changes made to the original:
 #
-# (None)
+# - Removed unwanted blocks.
 #
 ## -- Mode for oathkeeper controller: possible modes are: controller or sidecar
 global:
@@ -38,23 +38,9 @@ image:
     repository: busybox
     tag: 1
 
-## -- Options for the sidecar
-sidecar:
-  image:
-    repository: oryd/oathkeeper-maester
-    tag: v0.1.2
-  envs: {}
-
 # -- Pod priority
 # https://kubernetes.io/docs/concepts/configuration/pod-priority-preemption/
 priorityClassName: ""
-
-# -- Image pull secrets
-imagePullSecrets: []
-# -- Chart name override
-nameOverride: ""
-# -- Full chart name override
-fullnameOverride: ""
 
 ## -- Container level security context
 securityContext:
@@ -81,9 +67,6 @@ podSecurityContext:
   runAsGroup: 65534
   seccompProfile:
     type: RuntimeDefault
-
-# -- If enabled, a demo deployment with exemplary access rules and JSON Web Key Secrets will be generated.
-demo: false
 
 ## -- Configures the Kubernetes service
 service:
@@ -150,52 +133,6 @@ service:
     # e.g.  app: oathkeeper
     labels: {}
 
-## -- Configure ingress
-ingress:
-  # -- Configure ingress for the proxy port.
-  proxy:
-    # -- En-/Disable the proxy ingress.
-    enabled: false
-    className: ""
-    annotations: {}
-    #     kubernetes.io/ingress.class: nginx
-    #     kubernetes.io/tls-acme: "true"
-    hosts:
-      - host: proxy.oathkeeper.localhost
-        paths:
-          - path: /
-            pathType: ImplementationSpecific
-    #    tls: []
-    #        hosts:
-    #          - proxy.oathkeeper.local
-    #      - secretName: oathkeeper-proxy-example-tls
-    # -- Configuration for custom default service. This service will be used to handle the response when the configured service in the Ingress rule does not have any active endpoints
-    defaultBackend:
-      {}
-      # service:
-      #   name: myservice
-    #   port:
-    #     number: 80
-
-  api:
-    # -- En-/Disable the api ingress.
-    enabled: false
-    className: ""
-    annotations: {}
-    #      If you do want to specify annotations, uncomment the following
-    #      lines, adjust them as necessary, and remove the curly braces after 'annotations:'.
-    #      kubernetes.io/ingress.class: nginx
-    #      kubernetes.io/tls-acme: "true"
-    hosts:
-      - host: api.oathkeeper.localhost
-        paths:
-          - path: /
-            pathType: ImplementationSpecific
-#    tls: []
-#      hosts:
-#        - api.oathkeeper.local
-#      - secretName: oathkeeper-api-example-tls
-
 ## -- Configure ORY Oathkeeper itself
 oathkeeper:
   # -- The ORY Oathkeeper configuration. For a full list of available settings, check:
@@ -255,12 +192,12 @@ deployment:
   #  choice for the user. This also increases chances charts run on environments with little
   #  resources, such as Minikube. If you do want to specify resources, uncomment the following
   #  lines, adjust them as necessary, and remove the curly braces after 'resources:'.
-  #  limits:
+  limits:
   #    cpu: 100m
-  #    memory: 128Mi
-  #  requests:
-  #    cpu: 100m
-  #  memory: 128Mi
+    memory: 256Mi
+  requests:
+    cpu: 100m
+    memory: 64Mi
 
   lifecycle: {}
   # -- Configure the livenessProbe parameters
@@ -297,7 +234,7 @@ deployment:
     # -- Annotations to add to the service account
     annotations: {}
     # -- The name of the service account to use. If not set and create is true, a name is generated using the fullname template
-    name: ""
+    name: "ory-oathkeeper"
 
   # https://github.com/kubernetes/kubernetes/issues/57601
   automountServiceAccountToken: false

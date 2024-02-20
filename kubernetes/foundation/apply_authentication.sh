@@ -18,7 +18,7 @@
 # Note that the Helm Chart.yaml tagged 0.39.1 shows "0.39.0" as the version.
 # https://github.com/ory/k8s/blob/v0.39.1/helm/charts/oathkeeper/Chart.yaml
 #
-ORY_OATHKEEPER_VERSION=1.0.0
+ORY_OATHKEEPER_VERSION=0.40.6
 ORY_OATHKEEPER_HELM_CHART_VERSION=0.39.1
 
 echo "Installing authentication (ory oathkeeper)..."
