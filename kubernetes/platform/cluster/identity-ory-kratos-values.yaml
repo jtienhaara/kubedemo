@@ -1,3 +1,16 @@
+#
+# Configured according to:
+#
+#     https://k8s.ory.sh/helm/kratos.html
+#
+# In particular:
+#
+#     kratos.config.secrets.default
+#     kratos.config.dsn
+#     kratos.config.selfservice.default_browser_return_url
+#     kratos.config.courier.smtp.connection_uri
+#     kratos.config.identity.schemas
+#
 # https://github.com/ory/k8s/blob/v0.39.1/helm/charts/kratos/values.yaml
 #
 # Apache 2.0 license:
@@ -191,9 +204,20 @@ kratos:
   #       body:
   #       plainBody:
 
+  #     kratos.config.secrets.default
+  #     kratos.config.dsn
+  #     kratos.config.selfservice.default_browser_return_url
+  #     kratos.config.courier.smtp.connection_uri
+  #     kratos.config.identity.schemas
+  !!! We need to set up PostgreSQL and an SMTP mail server first
+  !!! Maybe auth* really does belong in a layer above the foundation
+  !!! Or maybe just identity management does, but auth* can be deployed
+  !!! without an identity management system???  Worth investigating Oathkeeper
   config:
     courier:
-      smtp: {}
+      smtp:
+        connection:
+          uri: !!!
       #template_override_path: /conf/courier-templates
 
     serve:

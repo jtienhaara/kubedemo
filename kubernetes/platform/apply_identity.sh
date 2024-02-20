@@ -15,16 +15,13 @@
 ORY_KRATOS_VERSION=1.0.0
 ORY_KRATOS_HELM_CHART_VERSION=0.39.1
 
-#ORY_OATHKEEPER_VERSION=!!!
-#ORY_OATHKEEPER_HELM_CHART_VERSION=!!!
-
 # TODO Do we want/need OIDC for Istio External Authorization?
 # https://istio.io/latest/docs/tasks/security/authorization/authz-custom/
 # (ory hydra)
 
-echo "Installing authentication and authorization (ory kratos, oathkeeper)..."
+echo "Installing identity management (ory kratos)..."
 
-CLUSTER_DIR=/cloud-init/kubernetes/foundation/cluster
+CLUSTER_DIR=/cloud-init/kubernetes/platform/cluster
 KUBECONFIG=$HOME/.kube/kubeconfig-kubedemo.yaml
 
 #
@@ -42,9 +39,10 @@ helm repo update \
 echo "  Installing ory kratos Helm chart version $ORY_KRATOS_HELM_CHART_VERSION:"
 helm upgrade --install kratos ory/kratos \
      --version $ORY_KRATOS_HELM_CHART_VERSION \
+     --values $CLUSTER_DIR/identity-ory-kratos-values.yaml \
      --wait \
      --kubeconfig $KUBECONFIG \
     || exit 1
 
-echo "SUCCESS Installing authentication and authorization (ory kratos, oathkeeper)."
+echo "SUCCESS Installing identity management (ory kratos)."
 exit 0

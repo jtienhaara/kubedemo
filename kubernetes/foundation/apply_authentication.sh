@@ -1,0 +1,50 @@
+#!/bin/sh
+
+#
+# https://github.com/ory/k8s/releases/tag/v0.39.1
+#
+# Apache 2.0 license:
+#
+# https://github.com/ory/k8s/blob/v0.39.1/LICENSE
+#
+#
+# Note: Until we get to the platform layer, we leave all authentication
+# enabled as "anonymous".  When we deploy the platform layer, we deploy
+# identity management and then turn off anonymous access.
+# (Later we add authorization by identity, too.)
+#
+
+#
+# Note that the Helm Chart.yaml tagged 0.39.1 shows "0.39.0" as the version.
+# https://github.com/ory/k8s/blob/v0.39.1/helm/charts/oathkeeper/Chart.yaml
+#
+ORY_OATHKEEPER_VERSION=1.0.0
+ORY_OATHKEEPER_HELM_CHART_VERSION=0.39.1
+
+echo "Installing authentication (ory oathkeeper)..."
+
+CLUSTER_DIR=/cloud-init/kubernetes/foundation/cluster
+KUBECONFIG=$HOME/.kube/kubeconfig-kubedemo.yaml
+
+#
+# ory oathkeeper authentication:
+#
+echo "  Adding Ory Helm repo:"
+helm repo add ory https://k8s.ory.sh/helm/charts \
+    || exit 1
+
+echo "  Kicking Helm:"
+helm repo update \
+     --kubeconfig $KUBECONFIG \
+    || exit 1
+
+echo "  Installing Ory Oathkeeper Helm chart version $ORY_OATHKEEPER_HELM_CHART_VERSION:"
+helm upgrade --install oathkeeper ory/oathkeeper \
+     --version $ORY_OATHKEEPER_HELM_CHART_VERSION \
+     --values $CLUSTER_DIR/authentication-ory-oathkeeper-values.yaml \
+     --wait \
+     --kubeconfig $KUBECONFIG \
+    || exit 1
+
+echo "SUCCESS Installing authentication (oathkeeper)."
+exit 0

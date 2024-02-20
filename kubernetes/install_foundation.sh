@@ -95,6 +95,10 @@ echo "    Applying log aggregation (Grafana Loki) to \"kubedemo\" cluster:"
 $RUN_DIR/foundation/apply_logging.sh \
     || exit 5
 
+echo "    Applying authentication (Ory Oathkeeper) to \"kubedemo\" cluster:"
+$RUN_DIR/foudnation/apply_authentication.sh \
+    || exit 5
+
 
 echo "  Finalizing VM setup:"
 
