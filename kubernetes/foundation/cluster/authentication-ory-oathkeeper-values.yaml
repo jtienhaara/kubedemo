@@ -305,7 +305,11 @@ deployment:
   #  - name: ...
   #    image: ...
 
-  # -- If you want to add extra init containers.
+  #
+  # Generate JWT keys / id_token keys, so that Istio can use Oathkeeper
+  # to decide on authentication.  From:
+  # https://www.ory.sh/docs/oathkeeper/cli/oathkeeper-credentials-generate
+  #
   extraInitContainers: |
     - name: "jwt-generate"
       image: "oryd/oathkeeper:v0.40.6"

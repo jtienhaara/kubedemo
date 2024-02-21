@@ -207,6 +207,27 @@ spec:
         - mountPath: /grafana-dashboard-definitions/2/vault
           name: grafana-dashboard-vault
           readOnly: false
+        - mountPath: /grafana-dashboard-definitions/2/istio-mesh
+          name: grafana-dashboard-istio-mesh
+          readOnly: false
+        - mountPath: /grafana-dashboard-definitions/2/istio-service
+          name: grafana-dashboard-istio-service
+          readOnly: false
+        - mountPath: /grafana-dashboard-definitions/2/istio-workload
+          name: grafana-dashboard-istio-workload
+          readOnly: false
+        - mountPath: /grafana-dashboard-definitions/2/istio-performance
+          name: grafana-dashboard-istio-performance
+          readOnly: false
+        - mountPath: /grafana-dashboard-definitions/2/istio-control-plane
+          name: grafana-dashboard-istio-control-plane
+          readOnly: false
+        - mountPath: /grafana-dashboard-definitions/2/istio-wasm
+          name: grafana-dashboard-istio-wasm
+          readOnly: false
+        - mountPath: /grafana-dashboard-definitions/2/ory-oathkeeper
+          name: grafana-dashboard-ory-oathkeeper
+          readOnly: false
         # Folder "1" "Logging":
         - mountPath: /grafana-dashboard-definitions/1/loki-1
           name: grafana-dashboard-loki-1
@@ -334,6 +355,27 @@ spec:
       - configMap:
           name: grafana-dashboard-vault
         name: grafana-dashboard-vault
+      - configMap:
+          name: grafana-dashboard-istio-mesh
+        name: grafana-dashboard-istio-mesh
+      - configMap:
+          name: grafana-dashboard-istio-service
+        name: grafana-dashboard-istio-service
+      - configMap:
+          name: grafana-dashboard-istio-workload
+        name: grafana-dashboard-istio-workload
+      - configMap:
+          name: grafana-dashboard-istio-performance
+        name: grafana-dashboard-istio-performance
+      - configMap:
+          name: grafana-dashboard-istio-control-plane
+        name: grafana-dashboard-istio-control-plane
+      - configMap:
+          name: grafana-dashboard-istio-wasm
+        name: grafana-dashboard-istio-wasm
+      - configMap:
+          name: grafana-dashboard-ory-oathkeeper
+        name: grafana-dashboard-ory-oathkeeper
         # Folder "1" "Logging":
       - configMap:
           name: loki-dashboards-1
