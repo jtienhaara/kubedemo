@@ -39,7 +39,7 @@ fi
 OS_DISTRIBUTION=`grep '^NAME="' /etc/os-release \
                      2> /dev/null \
                      | sed 's|^NAME="||' \
-                     | sed 's|"$||'`
+                     | sed 's|".*$||'`
 if test "$OS_DISTRIBUTION" != "Debian GNU/Linux"
 then
     echo "ERROR $0 is currently only built to work in Debian GNU/Linux (NAME field in /etc/os-release)." >&2
@@ -373,9 +373,9 @@ do
                       | grep "^VM_DISK_${VM_DISK}_SIZE" \
                       | sed "s|^.*VM_DISK_${VM_DISK}_SIZE=||" \
                       | sed 's|^"||' \
-                      | sed 's|"$||' \
+                      | sed 's|".*$||' \
                       | sed "s|^'||" \
-                      | sed "s|'\$||"`
+                      | sed "s|'.*\$||"`
 
     if test -z "$VM_DISK_SIZE"
     then
@@ -738,9 +738,9 @@ do
                       | grep "^VM_DISK_${VM_DISK}_IMAGE" \
                       | sed "s|^.*VM_DISK_${VM_DISK}_IMAGE=||" \
                       | sed 's|^"||' \
-                      | sed 's|"$||' \
+                      | sed 's|".*$||' \
                       | sed "s|^'||" \
-                      | sed "s|'\$||"`
+                      | sed "s|'.*\$||"`
     if test -z "$VM_IMAGE_URL"
     then
         # We'll create empty disks later.
@@ -751,9 +751,9 @@ do
                       | grep "^VM_DISK_${VM_DISK}_SIZE" \
                       | sed "s|^.*VM_DISK_${VM_DISK}_SIZE=||" \
                       | sed 's|^"||' \
-                      | sed 's|"$||' \
+                      | sed 's|".*$||' \
                       | sed "s|^'||" \
-                      | sed "s|'\$||"`
+                      | sed "s|'.*\$||"`
 
     VM_IMAGE_FILENAME=`basename "$VM_IMAGE_URL"`
     VM_DOWNLOADED_IMAGE="$VM_DOWNLOADS_DIR/$VM_IMAGE_FILENAME"
@@ -783,9 +783,9 @@ do
                       | grep "^VM_DISK_${VM_DISK}_IMAGE" \
                       | sed "s|^.*VM_DISK_${VM_DISK}_IMAGE=||" \
                       | sed 's|^"||' \
-                      | sed 's|"$||' \
+                      | sed 's|".*$||' \
                       | sed "s|^'||" \
-                      | sed "s|'\$||"`
+                      | sed "s|'.*\$||"`
     if test ! -z "$VM_IMAGE_URL"
     then
         # We already downloaded disk images earlier.
@@ -796,9 +796,9 @@ do
                       | grep "^VM_DISK_${VM_DISK}_SIZE" \
                       | sed "s|^.*VM_DISK_${VM_DISK}_SIZE=||" \
                       | sed 's|^"||' \
-                      | sed 's|"$||' \
+                      | sed 's|".*$||' \
                       | sed "s|^'||" \
-                      | sed "s|'\$||"`
+                      | sed "s|'.*\$||"`
 
     echo "      Creating disk_${VM_DISK}.qcow2: $VM_DISK_SIZE"
     qemu-img create -f qcow2 \
