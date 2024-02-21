@@ -1,0 +1,17 @@
+#
+# Integrates Istio gateway with Ory Oathkeeper for authentication.
+#
+# Based on:
+#
+#     https://istio.io/latest/docs/tasks/security/authentication/authn-policy/#end-user-authentication
+#
+---
+apiVersion: security.istio.io/v1
+kind: RequestAuthentication
+metadata:
+  name: "oathkeeper-authentication"
+  namespace: istio-system
+spec:
+  jwtRules:
+  - issuer: "http://oathkeeper-api.auth:4456"
+    jwksUri: "http://oathkeeper-api.auth:4456/.well-known/jwks.json"

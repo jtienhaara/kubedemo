@@ -29,11 +29,13 @@ KUBECONFIG=$HOME/.kube/kubeconfig-kubedemo.yaml
 echo "  Applying auth namespace:"
 kubectl apply \
         --filename $CLUSTER_DIR/authentication-ory-oathkeeper-namespace.yaml \
+        --kubeconfig $KUBECONFIG \
     || exit 1
 
 echo "  Applying ory-oathkeeper-access-rules ConfigMap:"
 kubectl apply \
         --filename $CLUSTER_DIR/authentication-ory-oathkeeper-configmap.yaml \
+        --kubeconfig $KUBECONFIG \
     || exit 1
 
 #
@@ -55,6 +57,12 @@ helm upgrade --install oathkeeper ory/oathkeeper \
      --namespace auth \
      --wait \
      --kubeconfig $KUBECONFIG \
+    || exit 1
+
+echo "  Applying Istio JWT authentication (using Ory Oathkeeper) to gateway:"
+kubectl apply \
+        --filename $CLUSTER_DIR/authentication-istio-resources.yaml \
+        --kubeconfig $KUBECONFIG \
     || exit 1
 
 echo "SUCCESS Installing authentication (oathkeeper)."

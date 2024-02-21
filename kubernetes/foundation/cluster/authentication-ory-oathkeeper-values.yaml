@@ -17,10 +17,10 @@
 #
 # - Removed unwanted blocks.
 # - Changed access-rules file source from /etc/rules/access-rules.json
-#   to /etc/rules/access-rules.yaml, to mount via ConfigMap.
+#   to /etc/rules/kubedemo/access-rules.yaml, to mount via ConfigMap.
 #   (See also authentication-ory-oathkeeper-configmap.yaml.)
 # - Added volumes and volumeMounts to use the access-rules ConfigMap
-#   for /etc/rules/access-rules.yaml.
+#   for /etc/rules/kubedemo/access-rules.yaml.
 # - Note: until later, we enable anonymous access to all VirtualServices:
 #   https://www.ory.sh/docs/oathkeeper/pipeline/authn#anonymous
 #
@@ -153,7 +153,24 @@ oathkeeper:
         #
         # Mounted from the "access-rules" ConfigMap:
         #
-        - file:///etc/rules/access-rules.yaml
+        - file:///etc/rules/kubedemo/access-rules.yaml
+      matching_strategy: regexp
+    authenticators:
+      #
+      # We'll disable anonymous access later...
+      #
+      anonymous:
+        enabled: true
+    authorizers:
+      allow:
+        enabled: true
+    mutators:
+      id_token:
+        enabled: true
+        config:
+          issuer_url: http://oathkeeper-api.auth:4456
+          jwks_url: file:///etc/jwks/jwks.json
+          ttl: 1h
     serve:
       proxy:
         port: 4455
@@ -269,12 +286,17 @@ deployment:
   extraVolumes:
     - name: access-rules
       configMap:
-        configMapName: access-rules
+        name: access-rules
+    - name: jwks
+      emptyDir: {}
 
   # -- Extra volume mounts, allows mounting the extraVolumes to the container.
   extraVolumeMounts:
     - name: access-rules
-      mountPath: /etc/rules/access-rules.yaml
+      mountPath: /etc/rules/kubedemo/
+      readOnly: true
+    - name: jwks
+      mountPath: /etc/jwks/
       readOnly: true
 
   # -- If you want to add extra sidecar containers.
@@ -284,7 +306,15 @@ deployment:
   #    image: ...
 
   # -- If you want to add extra init containers.
-  extraInitContainers: ""
+  extraInitContainers: |
+    - name: "jwt-generate"
+      image: "oryd/oathkeeper:v0.40.6"
+      command: [ "sh", "-c", "echo 'Generating /etc/jwks/jwks.json:'; oathkeeper credentials generate --alg RS256 --bits 4096 > /etc/jwks/jwks.json && echo 'Success generating /etc/jwks/jwks.json'" ]
+      volumeMounts:
+        - name: jwks
+          mountPath: /etc/jwks/
+          readOnly: false
+
   # extraInitContainers: |
   #  - name: ...
   #    image: ...

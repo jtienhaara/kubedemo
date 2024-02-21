@@ -1,0 +1,117 @@
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  labels:
+    istio-injection: disabled
+  name: platform
+---
+#
+# Docker Registry for pushing and pulling OCI container images.
+#
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: registry
+  namespace: platform
+spec:
+  selector:
+    matchLabels:
+      app: registry
+
+  replicas: 1
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 49%
+      maxSurge: 1
+
+  progressDeadlineSeconds: 600
+  minReadySeconds: 0
+
+  revisionHistoryLimit: 2
+
+  template:
+    metadata:
+      labels:
+        app: registry
+    spec:
+      containers:
+      - name: main
+        image: registry:2.7.1
+        imagePullPolicy: IfNotPresent
+
+        ports:
+        - name: http
+          containerPort: 5000
+          protocol: TCP
+
+        env:
+        - name: REGISTRY_AUTH
+          value: "none"
+
+        # !!! Just use ephemeral host storage for now,
+        # !!! since local PersistentVolumes are so obtuse
+        # !!! on a laptop.
+
+        #
+        # volumeMounts and volumes adapted from:
+        # https://www.nearform.com/blog/how-to-run-a-public-docker-registry-in-kubernetes/
+        #
+        volumeMounts:
+        # !!! - name: config-volume
+        # !!!   mountPath: /etc/docker/registry
+        # !!!   readOnly: true
+        # !!! - name: auth-volume
+        # !!!   mountPath: /auth
+        # !!!   readOnly: true
+        - name: storage-volume
+          mountPath: /var/lib/registry
+
+      restartPolicy: Always
+
+      #
+      # volumeMounts and volumes adapted from:
+      # https://www.nearform.com/blog/how-to-run-a-public-docker-registry-in-kubernetes/
+      #
+      volumes:
+      # !!! - name: config-volume
+      # !!!   configMap:
+      # !!!     name: registry-config
+      # !!!     items:
+      # !!!     - key: registry-config.yaml
+      # !!!       path: config.yaml
+      # !!! - name: auth-volume
+      # !!!   secret:
+      # !!!     secretName: registry-secret
+      # !!!     items:
+      # !!!     - key: HTPASSWD
+      # !!!       path: htpasswd
+      - name: storage-volume
+        emptyDir: {}
+---
+#
+# Docker Registry service, accessible within the cluster as
+# registry.platform (or registry.platform.clusterxyz...).
+#
+apiVersion: v1
+kind: Service
+metadata:
+  name: registry
+  namespace: platform
+spec:
+  #
+  # The registry Service must always run on the same IP address in the
+  # build cluster, so that Kubelet can find it.  Kubelet looks outside
+  # the cluster DNS for image loading, so it can't resolve the name
+  # "registry".
+  #
+  clusterIP: 10.96.144.234
+  selector:
+    app: registry
+  ports:
+  - name: http
+    protocol: TCP
+    port: 5000
+    targetPort: 5000
+---
