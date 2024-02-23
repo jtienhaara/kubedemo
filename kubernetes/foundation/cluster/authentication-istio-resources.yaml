@@ -4,6 +4,12 @@
 # Based on:
 #
 #     https://istio.io/latest/docs/tasks/security/authentication/authn-policy/#end-user-authentication
+#     https://istio.io/latest/docs/tasks/security/authorization/authz-custom/#define-the-external-authorizer
+#
+# To authenticate, Istio / Envoy queries the /decisions/ endpoint
+# of Ory Oathkeeper:
+#
+#     https://www.ory.sh/docs/oathkeeper/#access-control-decision-api
 #
 ---
 apiVersion: security.istio.io/v1
@@ -15,3 +21,25 @@ spec:
   jwtRules:
   - issuer: "http://oathkeeper-api.auth:4456"
     jwksUri: "http://oathkeeper-api.auth:4456/.well-known/jwks.json"
+---
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+  #
+  # Because the AuthorizationPolicy is in the root namespace (istio-system),
+  # it applies to all VirtualServices in all namespaces.
+  #
+  name: oathkeeper-authorization
+  namespace: istio-system
+spec:
+  # !!! action: ALLOW
+  action: CUSTOM
+  provider:
+    name: "oathkeeper-authentication"
+  rules:
+    - {}
+  # !!! rules:
+  # !!!   - when:
+  # !!!       - key: request.auth.claims[iss]
+  # !!!         values:
+  # !!!           - "http://oathkeeper-api.auth:4456"

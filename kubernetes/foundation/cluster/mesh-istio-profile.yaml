@@ -28,6 +28,26 @@ spec:
     # Destination rule is used to opt-in.
     # h2_upgrade_policy: DO_NOT_UPGRADE
 
+    #
+    # Authenticate all HTTP gateway requests via Ory Oathkeeper.
+    #
+    extensionProviders:
+    - name: "oathkeeper-authentication"
+      envoyExtAuthzHttp:
+        #
+        # To authenticate, Istio / Envoy queries the /decisions/ endpoint
+        # of Ory Oathkeeper:
+        #
+        #     https://www.ory.sh/docs/oathkeeper/#access-control-decision-api
+        #
+        # Isto / Envoy envoyExtAuthzHttp:
+        #
+        #     https://istio.io/latest/docs/reference/config/istio.mesh.v1alpha1/#MeshConfig-ExtensionProvider-EnvoyExternalAuthorizationHttpProvider
+        #
+        service: "auth/oathkeeper-api.auth.svc.cluster.local"
+        port: "4456"
+        pathPrefix: "/decisions"
+
   # Traffic management feature
   components:
     base:

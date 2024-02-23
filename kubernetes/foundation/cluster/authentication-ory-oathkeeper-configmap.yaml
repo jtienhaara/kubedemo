@@ -7,6 +7,11 @@
 # in the platform layer, we disable anonymous access, and turn on
 # proper authentication.  See the platform layer for details.
 #
+# To authenticate, Istio / Envoy queries the /decisions/ endpoint
+# of Oathkeeper:
+#
+#     https://www.ory.sh/docs/oathkeeper/#access-control-decision-api
+#
 # Full YAML allowed in access-rules.yaml:
 #
 #     https://www.ory.sh/docs/oathkeeper/reference/configuration
@@ -21,10 +26,63 @@ metadata:
   labels:
     app.kubernetes.io/component: ory-oathkeeper
     app.kubernetes.io/name: ory-oathkeeper
-  name: access-rules
+  #
+  # The ConfigMap MUST be named oathkeeper-rules, otherwise the Ory Pod
+  # refuses to spin up.
+  #
+  name: oathkeeper-rules
   namespace: auth
 data:
   access-rules.yaml: |-
+    #
+    # disallow-denied:
+    # Nobody is able to access /denied.  (For testing that authentication
+    # and authorization are working properly.)
+    #
+    - id: disallow-denied
+      version: v1.0.0
+      match:
+        methods:
+          - DELETE
+          - GET
+          - HEAD
+          - POST
+          - PUT
+        #
+        # Angle brackets are needed for patterns:
+        # https://www.ory.sh/docs/oathkeeper/api-access-rules#access-rule-format
+        #
+        # Unfortunately Oathkeeper does NOT apply the first matching
+        # rule.  So if we have multiple matching rules, it bombs out with:
+        #
+        #     message:Expected exactly one rule but found multiple rules reason: status:Internal Server Error status_code:500]
+        #
+        # Ridiculous.
+        #
+        # So we've hacked our allow rule to only allow URLs ending
+        # with reasonable URL letters (anything except "!", %21 URL encoded).
+        # And our denied URL for testing is anything that ends with "!" (%21).
+        #
+        url: <.*>!
+
+      authenticators:
+        - handler: anonymous
+          config:
+            subject: anonymous
+
+      authorizer:
+        handler: deny
+
+      #
+      # Generate a JWT (id_token) so that Istio can use Ory Oathkeeper
+      # to authenticate (even for our anonymous user).
+      #
+      #     https://istio.io/latest/docs/tasks/security/authentication/authn-policy/#end-user-authentication
+      #     https://www.ory.sh/docs/oathkeeper/pipeline/mutator#id_token
+      #
+      mutators:
+        - handler: id_token
+
     #
     # allow-all-anonymous:
     # Anyone and everyone is allowed to do anything and everything.
@@ -32,7 +90,28 @@ data:
     - id: allow-all-anonymous
       version: v1.0.0
       match:
-        url: http://.*
+        methods:
+          - DELETE
+          - GET
+          - HEAD
+          - POST
+          - PUT
+        #
+        # Angle brackets are needed for patterns:
+        # https://www.ory.sh/docs/oathkeeper/api-access-rules#access-rule-format
+        #
+        # Unfortunately Oathkeeper does NOT apply the first matching
+        # rule.  So if we have multiple matching rules, it bombs out with:
+        #
+        #     message:Expected exactly one rule but found multiple rules reason: status:Internal Server Error status_code:500]
+        #
+        # Ridiculous.
+        #
+        # So we've hacked our allow rule to only allow URLs ending
+        # with reasonable URL letters (anything except "!", %21 URL encoded).
+        # And our denied URL for testing is anything that ends with "!" (%21).
+        #
+        url: <.*[^!]>
 
       authenticators:
         - handler: anonymous

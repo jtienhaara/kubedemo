@@ -32,12 +32,6 @@ kubectl apply \
         --kubeconfig $KUBECONFIG \
     || exit 1
 
-echo "  Applying ory-oathkeeper-access-rules ConfigMap:"
-kubectl apply \
-        --filename $CLUSTER_DIR/authentication-ory-oathkeeper-configmap.yaml \
-        --kubeconfig $KUBECONFIG \
-    || exit 1
-
 #
 # ory oathkeeper authentication:
 #
@@ -50,13 +44,30 @@ helm repo update \
      --kubeconfig $KUBECONFIG \
     || exit 1
 
+#
+# We cannot wait for Ory to spin up, because we have to wait until
+# after the maester operator has deleted ConfigMap "oathkeeper-rules"
+# before we re-deploy the ConfigMap, so that Oathkeeper Pod can start.
+#
 echo "  Installing Ory Oathkeeper Helm chart version $ORY_OATHKEEPER_HELM_CHART_VERSION:"
 helm upgrade --install oathkeeper ory/oathkeeper \
      --version $ORY_OATHKEEPER_HELM_CHART_VERSION \
      --values $CLUSTER_DIR/authentication-ory-oathkeeper-values.yaml \
      --namespace auth \
-     --wait \
      --kubeconfig $KUBECONFIG \
+    || exit 1
+
+#
+# OMG Ory Oathkeeper Maester DELIBERATELY DELETES oathkeeper-rules ConfigMap.
+# And if oathkeeper-rules doesn't exist then the Oathkeeper Pod never spins up.
+# So we have to create a ConfigMap called "oathkeeper-rules"
+# AFTER we deploy Ory.
+# Dumbdumbdumbdumbdumb
+#
+echo "  Applying oOry Oathkeeper access rules ConfigMap:"
+kubectl apply \
+        --filename $CLUSTER_DIR/authentication-ory-oathkeeper-configmap.yaml \
+        --kubeconfig $KUBECONFIG \
     || exit 1
 
 echo "  Applying Istio JWT authentication (using Ory Oathkeeper) to gateway:"
