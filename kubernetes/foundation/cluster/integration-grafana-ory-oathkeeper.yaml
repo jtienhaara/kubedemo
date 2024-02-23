@@ -15,16 +15,7 @@ items:
     # 13186_rev1.json:
     ory-oathkeeper.json: |-
       {
-        "__inputs": [
-          {
-            "name": "PROMETHEUS",
-            "label": "prometheus",
-            "description": "",
-            "type": "datasource",
-            "pluginId": "prometheus",
-            "pluginName": "Prometheus"
-          }
-        ],
+        "__inputs": [],
         "__requires": [
           {
             "type": "grafana",
@@ -72,7 +63,7 @@ items:
         "links": [],
         "panels": [
           {
-            "datasource": "${PROMETHEUS}",
+            "datasource": "${DS_PROMETHEUS}",
             "gridPos": {
               "h": 5,
               "w": 8,
@@ -118,7 +109,7 @@ items:
             "type": "stat"
           },
           {
-            "datasource": "${PROMETHEUS}",
+            "datasource": "${DS_PROMETHEUS}",
             "gridPos": {
               "h": 5,
               "w": 8,
@@ -169,7 +160,7 @@ items:
           },
           {
             "cacheTimeout": null,
-            "datasource": "${PROMETHEUS}",
+            "datasource": "${DS_PROMETHEUS}",
             "gridPos": {
               "h": 5,
               "w": 8,
@@ -231,7 +222,7 @@ items:
             "bars": false,
             "dashLength": 10,
             "dashes": false,
-            "datasource": "${PROMETHEUS}",
+            "datasource": "${DS_PROMETHEUS}",
             "fill": 1,
             "fillGradient": 0,
             "gridPos": {
@@ -323,7 +314,7 @@ items:
             "bars": false,
             "dashLength": 10,
             "dashes": false,
-            "datasource": "${PROMETHEUS}",
+            "datasource": "${DS_PROMETHEUS}",
             "fill": 1,
             "fillGradient": 0,
             "gridPos": {
@@ -434,7 +425,22 @@ items:
         "style": "dark",
         "tags": [],
         "templating": {
-          "list": []
+          "list": [
+            {
+              "current": {
+                "text": "Prometheus",
+                "value": "Prometheus"
+              },
+              "hide": 0,
+              "label": "Data Source",
+              "name": "DS_PROMETHEUS",
+              "options": [],
+              "query": "prometheus",
+              "refresh": 1,
+              "regex": "",
+              "type": "datasource"
+            }
+          ]
         },
         "time": {
           "from": "now-1h",

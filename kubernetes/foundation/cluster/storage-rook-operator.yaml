@@ -9,8 +9,16 @@
 #
 # The following changes have been made to the original:
 #
-#     - Changed operator image from "master" to v1.13.3
+#     - operator image from "master" to v1.13.3
 #       (https://github.com/rook/rook/releases/tag/v1.13.3)
+#     - ROOK_CSI_ENABLE_NFS from "false" to "true" (maybe we'll use NFS...)
+#     - CSI_ENABLE_METADATA uncommented and set to "true"
+#     - CSI_CLUSTER_NAME uncommented and changed to "kubedemo-storage"
+#     - CSI_ENABLE_LIVENESS changed from "false" to "true"
+#     - CSI_CEPHFS_LIVENESS_METRICS_PORT uncommented (port "9081")
+#     - CSI_RBS_LIVENESS_METRICS_PORT uncommented (port "9080")
+#     - CSIADDONS_PORT uncommented (port "9070")
+#     - CSI_ENABLE_READ_AFFINITY changed from "false" to "true"
 #
 #################################################################################################################
 # The deployment for the rook operator
@@ -48,7 +56,7 @@ data:
   # Enable the default version of the CSI RBD driver. To start another version of the CSI driver, see image properties below.
   ROOK_CSI_ENABLE_RBD: "true"
   # Enable the CSI NFS driver. To start another version of the CSI driver, see image properties below.
-  ROOK_CSI_ENABLE_NFS: "false"
+  ROOK_CSI_ENABLE_NFS: "true"
 
   # Set to true to enable Ceph CSI pvc encryption support.
   CSI_ENABLE_ENCRYPTION: "false"
@@ -61,11 +69,11 @@ data:
   # Set to true to enable adding volume metadata on the CephFS subvolume and RBD images.
   # Not all users might be interested in getting volume/snapshot details as metadata on CephFS subvolume and RBD images.
   # Hence enable metadata is false by default.
-  # CSI_ENABLE_METADATA: "true"
+  CSI_ENABLE_METADATA: "true"
 
   # cluster name identifier to set as metadata on the CephFS subvolume and RBD images. This will be useful in cases
   # like for example, when two container orchestrator clusters (Kubernetes/OCP) are using a single ceph cluster.
-  # CSI_CLUSTER_NAME: "my-prod-cluster"
+  CSI_CLUSTER_NAME: "kubedemo-storage"
 
   # Set logging level for cephCSI containers maintained by the cephCSI.
   # Supported values from 0 to 5. 0 for general useful logs, 5 for trace level verbosity.
@@ -500,11 +508,11 @@ data:
 
   # Configure CSI CephFS liveness metrics port
   # Set to true to enable Ceph CSI liveness container.
-  CSI_ENABLE_LIVENESS: "false"
-  # CSI_CEPHFS_LIVENESS_METRICS_PORT: "9081"
+  CSI_ENABLE_LIVENESS: "true"
+  CSI_CEPHFS_LIVENESS_METRICS_PORT: "9081"
   # Configure CSI RBD liveness metrics port
-  # CSI_RBD_LIVENESS_METRICS_PORT: "9080"
-  # CSIADDONS_PORT: "9070"
+  CSI_RBD_LIVENESS_METRICS_PORT: "9080"
+  CSIADDONS_PORT: "9070"
 
   # Set CephFS Kernel mount options to use https://docs.ceph.com/en/latest/man/8/mount.ceph/#options
   # Set to "ms_mode=secure" when connections.encrypted is enabled in CephCluster CR
@@ -545,7 +553,7 @@ data:
 
   # Enable read affinity for RBD volumes. Recommended to
   # set to true if running kernel 5.8 or newer.
-  CSI_ENABLE_READ_AFFINITY: "false"
+  CSI_ENABLE_READ_AFFINITY: "true"
   # CRUSH location labels define which node labels to use
   # as CRUSH location. This should correspond to the values set in
   # the CRUSH map.

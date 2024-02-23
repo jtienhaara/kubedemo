@@ -16,6 +16,7 @@ for OBSERVABILITY_MANIFEST in \
      $CLUSTER_DIR/integration-prometheus-rook-ceph.yaml \
      $CLUSTER_DIR/integration-grafana-rook-ceph.yaml \
      $CLUSTER_DIR/integration-grafana-vault.yaml \
+     $CLUSTER_DIR/integration-grafana-logs.yaml \
      $CLUSTER_DIR/integration-grafana-istio.yaml \
      $CLUSTER_DIR/integration-grafana-ory-oathkeeper.yaml
 do
