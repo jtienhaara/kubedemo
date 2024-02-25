@@ -1,0 +1,215 @@
+#
+# Ceph Toolbox for troubleshooting.
+#
+# This really should not be deployed to a production cluster,
+# since anyone who maliciously or accidentally executes bad code
+# from within the deployed toolbox Pod can really mess up
+# your storage.  But because troubleshooting Rook Ceph issues
+# is a royal falafel pita, you can manually deploy the toolbox,
+# using this manifest, with:
+#
+#     kubectl apply \
+#         --filename /cloud-init/kubernetes/foundation/cluster/storage-rook-ceph-toolbox.yaml \
+#         --kubeconfig ~/.kube/kubeconfig-kubedemo.yaml
+#
+# And then run ceph commands such as:
+#
+#     kubectl exec \
+#         `kubectl get pods \
+#              --namespace rook-ceph \
+#              --kubeconfig ~/.kube/kubeconfig-kubedemo.yaml \
+#          | awk '$1 ~ /^rook-ceph-tools-.*$/ { print $1; }'` \
+#         --namespace rook-ceph \
+#         --kubeconfig ~/.kube/kubeconfig-kubedemo.yaml \
+#         -- \
+#         ceph df
+#
+# Example commands:
+#
+#     ceph status
+#     ceph osd status
+#     ceph osd df
+#     ceph osd utilization
+#     ceph osd pool stats
+#     ceph osd tree
+#     ceph pg stat
+#
+# Also:
+#
+#     ceph --help
+#     rbd --help
+#
+# And:
+#
+#     rbd du --pool kubedemo-block-pool
+#     rbd ls --pool kubedemo-block-pool
+#
+# Example:
+#
+#     kubectl exec `kubectl get pods --namespace rook-ceph --kubeconfig ~/.kube/kubeconfig-kubedemo.yaml | awk '$1 ~ /^rook-ceph-tools-.*$/ { print $1; }'` --namespace rook-ceph --kubeconfig ~/.kube/kubeconfig-kubedemo.yaml -- rbd du --pool kubedemo-block-pool
+#     NAME                                          PROVISIONED  USED   
+#     csi-vol-03409901-0b5d-442a-8dd8-5d8738f6cd80      256 MiB   56 MiB
+#     csi-vol-10f4e8d2-3150-4aca-a514-8a0af9cb9d37        1 GiB   48 MiB
+#     csi-vol-1be4f454-407d-432d-864a-c47b06a6ac3a        1 GiB   28 MiB
+#     csi-vol-1e925818-5692-449e-84a5-c868e185bd21        1 GiB   28 MiB
+#     csi-vol-27dc3c1d-9555-4521-8040-987fc7c77390      256 MiB   44 MiB
+#     csi-vol-2e85901c-7646-4ec8-b72d-4b28c443a547      256 MiB   44 MiB
+#     csi-vol-5019acae-84b2-42b4-8d0f-7803179e0e78      256 MiB   56 MiB
+#     csi-vol-50cff4f4-a608-421e-82b6-6b900cfbf2fb        1 GiB   52 MiB
+#     csi-vol-5d350fb8-d439-4b3d-bd28-2f03ed5cf177      256 MiB   52 MiB
+#     csi-vol-77695a13-cba9-4776-9de2-cd112ef6db6f        1 GiB   28 MiB
+#     csi-vol-7a9a7da5-8e9c-4665-8354-146fc678688f      256 MiB   44 MiB
+#     csi-vol-cb6936ae-5208-4ec1-991b-bc9626947ece        1 GiB   72 MiB
+#     csi-vol-dc7809ae-e8a6-4558-be68-6b557196158f        1 GiB   44 MiB
+#     csi-vol-dd21b123-7b27-4678-aadf-920b855641c4        1 GiB   52 MiB
+#     csi-vol-fe5e65ee-276a-441e-87a1-cbe926f15eff        1 GiB   52 MiB
+#     <TOTAL>                                            10 GiB  700 MiB
+#
+# Commands from:
+#
+#     https://rook.io/docs/rook/v1.9/ceph-common-issues.html#ceph-commands
+#     https://docs.ceph.com/en/latest/man/8/rbd/
+#
+# From:
+#
+#     https://rook.io/docs/rook/v1.13/Troubleshooting/ceph-toolbox/
+#     https://github.com/rook/rook/blob/v1.13.3/deploy/examples/toolbox.yaml
+#
+# Licensed under the Apache 2.0 license:
+#
+#     https://github.com/rook/rook/blob/v1.13.3/LICENSE
+#
+# Changes made to the original:
+#
+# None
+#
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: rook-ceph-tools
+  namespace: rook-ceph # namespace:cluster
+  labels:
+    app: rook-ceph-tools
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: rook-ceph-tools
+  template:
+    metadata:
+      labels:
+        app: rook-ceph-tools
+    spec:
+      dnsPolicy: ClusterFirstWithHostNet
+      containers:
+        - name: rook-ceph-tools
+          image: quay.io/ceph/ceph:v18.2.1
+          command:
+            - /bin/bash
+            - -c
+            - |
+              # Replicate the script from toolbox.sh inline so the ceph image
+              # can be run directly, instead of requiring the rook toolbox
+              CEPH_CONFIG="/etc/ceph/ceph.conf"
+              MON_CONFIG="/etc/rook/mon-endpoints"
+              KEYRING_FILE="/etc/ceph/keyring"
+
+              # create a ceph config file in its default location so ceph/rados tools can be used
+              # without specifying any arguments
+              write_endpoints() {
+                endpoints=$(cat ${MON_CONFIG})
+
+                # filter out the mon names
+                # external cluster can have numbers or hyphens in mon names, handling them in regex
+                # shellcheck disable=SC2001
+                mon_endpoints=$(echo "${endpoints}"| sed 's/[a-z0-9_-]\+=//g')
+
+                DATE=$(date)
+                echo "$DATE writing mon endpoints to ${CEPH_CONFIG}: ${endpoints}"
+                  cat <<EOF > ${CEPH_CONFIG}
+              [global]
+              mon_host = ${mon_endpoints}
+
+              [client.admin]
+              keyring = ${KEYRING_FILE}
+              EOF
+              }
+
+              # watch the endpoints config file and update if the mon endpoints ever change
+              watch_endpoints() {
+                # get the timestamp for the target of the soft link
+                real_path=$(realpath ${MON_CONFIG})
+                initial_time=$(stat -c %Z "${real_path}")
+                while true; do
+                  real_path=$(realpath ${MON_CONFIG})
+                  latest_time=$(stat -c %Z "${real_path}")
+
+                  if [[ "${latest_time}" != "${initial_time}" ]]; then
+                    write_endpoints
+                    initial_time=${latest_time}
+                  fi
+
+                  sleep 10
+                done
+              }
+
+              # read the secret from an env var (for backward compatibility), or from the secret file
+              ceph_secret=${ROOK_CEPH_SECRET}
+              if [[ "$ceph_secret" == "" ]]; then
+                ceph_secret=$(cat /var/lib/rook-ceph-mon/secret.keyring)
+              fi
+
+              # create the keyring file
+              cat <<EOF > ${KEYRING_FILE}
+              [${ROOK_CEPH_USERNAME}]
+              key = ${ceph_secret}
+              EOF
+
+              # write the initial config file
+              write_endpoints
+
+              # continuously update the mon endpoints if they fail over
+              watch_endpoints
+          imagePullPolicy: IfNotPresent
+          tty: true
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 2016
+            runAsGroup: 2016
+            capabilities:
+              drop: ["ALL"]
+          env:
+            - name: ROOK_CEPH_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: rook-ceph-mon
+                  key: ceph-username
+          volumeMounts:
+            - mountPath: /etc/ceph
+              name: ceph-config
+            - name: mon-endpoint-volume
+              mountPath: /etc/rook
+            - name: ceph-admin-secret
+              mountPath: /var/lib/rook-ceph-mon
+              readOnly: true
+      volumes:
+        - name: ceph-admin-secret
+          secret:
+            secretName: rook-ceph-mon
+            optional: false
+            items:
+              - key: ceph-secret
+                path: secret.keyring
+        - name: mon-endpoint-volume
+          configMap:
+            name: rook-ceph-mon-endpoints
+            items:
+              - key: data
+                path: mon-endpoints
+        - name: ceph-config
+          emptyDir: {}
+      tolerations:
+        - key: "node.kubernetes.io/unreachable"
+          operator: "Exists"
+          effect: "NoExecute"
+          tolerationSeconds: 5

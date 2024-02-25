@@ -16,6 +16,8 @@
 #
 #     https://rook.io/docs/rook/latest-release/Getting-Started/quickstart/#kubernetes-version
 #
+ROOK_CEPH_VERSION=1.13.3
+
 echo "Installing storage (Rook/Ceph)..."
 
 CLUSTER_DIR=/cloud-init/kubernetes/foundation/cluster
