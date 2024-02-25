@@ -15,6 +15,25 @@
 #
 # TODO Should store in Vault kv.
 #
+# Note that the default password encryption, as of Postgres 16.x, is
+# scram-sha-256 (a good thing; older Postgres used MD5).
+#
+#     https://www.postgresql.org/docs/current/runtime-config-connection.html#GUC-PASSWORD-ENCRYPTION
+#
+# TODO !!! Except this seems to be a lie.  From /etc/pg_hba.conf in
+#          a running postgres-1-0 pod:
+#
+#     cat /etc/pg_hba.conf 
+#      # TYPE  DATABASE        USER            ADDRESS                 METHOD
+#      # Replication connections by a user with the replication privilege
+#      host    replication     replication     all                     md5
+#      # As long as it is authenticated, all connections allowed except from "0.0.0.0/0"
+#      local   all             all                                     md5
+#      host    all             all             all                     md5
+#      host    all             all             0.0.0.0/0               reject
+#
+#     I.e. lots of md5 password encryption!  :(
+#
 ---
 apiVersion: v1
 kind: Namespace
@@ -111,7 +130,7 @@ spec:
           command:
             - "sh"
             - "-c"
-            - 'superUserPassword=`od --read-bytes 32 --format u --address-radix none /dev/urandom | tr -d " \n"` && replicationUserPassword=`od --read-bytes 32 --format u --address-radix none /dev/urandom | tr -d " \n"` && KUBERNETES_API_TOKEN=`cat /var/run/secrets/kubernetes.io/serviceaccount/token` && curl --insecure --fail-with-body --request PUT -cacert /var/run/secrets/kubernetes.io/serviceaccount/ca.crt --header "Authorization: Bearer $KUBERNETES_API_TOKEN" --header "Content-Type: application/json" "https://$KUBERNETES_SERVICE_HOST:$KUBERNETES_SERVICE_PORT/api/v1/namespaces/db/secrets/postgres-credentials" --data "{\"apiVersion\": \"v1\", \"kind\": \"Secret\", \"metadata\": {\"annotations\": {}, \"labels\": {}, \"name\":\"postgres-credentials\", \"namespace\": \"db\"}, \"stringData\": {\"superUserPassword\": \"$superUserPassword\", \"replicationUserPassword\":\"$replicationUserPassword\"}, \"type\": \"Opaque\", \"immutable\": false}"'
+            - 'superUserPassword=`od --read-bytes 32 --format u --address-radix none /dev/urandom | tr -d " \n"` && replicationUserPassword=`od --read-bytes 32 --format u --address-radix none /dev/urandom | tr -d " \n"` && KUBERNETES_API_TOKEN=`cat /var/run/secrets/kubernetes.io/serviceaccount/token` && curl --insecure --fail-with-body --request PUT -cacert /var/run/secrets/kubernetes.io/serviceaccount/ca.crt --header "Authorization: Bearer $KUBERNETES_API_TOKEN" --header "Content-Type: application/json" "https://$KUBERNETES_SERVICE_HOST:$KUBERNETES_SERVICE_PORT/api/v1/namespaces/db/secrets/postgres-credentials" --data "{\"apiVersion\": \"v1\", \"kind\": \"Secret\", \"metadata\": {\"annotations\": {}, \"labels\": {}, \"name\":\"postgres-credentials\", \"namespace\": \"db\"}, \"stringData\": {\"superUserPassword\": \"$superUserPassword\", \"replicationUserPassword\":\"$replicationUserPassword\"}, \"type\": \"Opaque\", \"immutable\": true}"'
           resources:
             limits:
               memory: 32Mi
