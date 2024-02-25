@@ -1,0 +1,174 @@
+#
+# Generate credentials for kubegres (PostgreSQL) from HashiCorp Vault,
+# then deploy a PostgreSQL cluster, in the "db" namespace.
+#
+# We use one PostgreSQL cluster for all micro-services.  If you want
+# one cluster per micro-service, copy-pasta this manifest, but change
+# the namespace (one kubegres cluster per namespace).
+#
+# Based on:
+#
+#     https://www.kubegres.io/doc/getting-started.html
+#
+# We basically generate random numbers for the PostgreSQL superuser and
+# replication passwords.
+#
+# TODO Should store in Vault kv.
+#
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  labels:
+    istio-injection: disabled  # TODO !!! set to enabled
+  name: db
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  labels:
+    app.kubernetes.io/component: rbac
+    app.kubernetes.io/created-by: kubedemo
+    app.kubernetes.io/instance: generate-credentials
+    app.kubernetes.io/name: serviceaccount
+    app.kubernetes.io/part-of: kubedemo
+  name: generate-credentials
+  namespace: db
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  labels:
+    app.kubernetes.io/component: rbac
+    app.kubernetes.io/created-by: kubedemo
+    app.kubernetes.io/instance: generate-credentials-role
+    app.kubernetes.io/name: serviceaccount
+    app.kubernetes.io/part-of: kubedemo
+  name: generate-credentials-role
+  namespace: db
+rules:
+  - apiGroups:
+      - ""
+    resources:
+      - secrets
+    verbs:
+      - update
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  labels:
+    app.kubernetes.io/component: rbac
+    app.kubernetes.io/created-by: kubedemo
+    app.kubernetes.io/instance: generate-credentials-rolebinding
+    app.kubernetes.io/name: serviceaccount
+    app.kubernetes.io/part-of: kubedemo
+  name: generate-credentials-rolebinding
+  namespace: db
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: generate-credentials-role
+subjects:
+  - kind: ServiceAccount
+    name: generate-credentials
+    namespace: db
+---
+#
+# Temporary blank Secret; the Job will create a real one.
+#
+apiVersion: v1
+kind: Secret
+metadata:
+  name: postgres-credentials
+  namespace: db
+type: Opaque
+immutable: false
+stringData:
+  replicationUserPassword: ""
+  superUserPassword: ""
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: generate-postgres-credentials
+  namespace: db
+spec:
+  template:
+    spec:
+      containers:
+        #
+        # From:
+        #     https://kubernetes.io/docs/tasks/run-application/access-api-from-pod/#without-using-a-proxy
+        #     https://kubernetes.io/docs/reference/kubernetes-api/config-and-storage-resources/secret-v1/#update-replace-the-specified-secret
+        #
+        # TODO: Remove --insecure once error is sorted out:
+        #       "curl: (60) SSL certificate problem: unable to get local issuer certificate"
+        #       (Tried both $KUBERNETES_SERVICE_HOST and kubernetes.default.svc)
+        #
+        - name: generate-credentials
+          image: "curlimages/curl:8.6.0"
+          command:
+            - "sh"
+            - "-c"
+            - 'superUserPassword=`od --read-bytes 32 --format u --address-radix none /dev/urandom | tr -d " \n"` && replicationUserPassword=`od --read-bytes 32 --format u --address-radix none /dev/urandom | tr -d " \n"` && KUBERNETES_API_TOKEN=`cat /var/run/secrets/kubernetes.io/serviceaccount/token` && curl --insecure --fail-with-body --request PUT -cacert /var/run/secrets/kubernetes.io/serviceaccount/ca.crt --header "Authorization: Bearer $KUBERNETES_API_TOKEN" --header "Content-Type: application/json" "https://$KUBERNETES_SERVICE_HOST:$KUBERNETES_SERVICE_PORT/api/v1/namespaces/db/secrets/postgres-credentials" --data "{\"apiVersion\": \"v1\", \"kind\": \"Secret\", \"metadata\": {\"annotations\": {}, \"labels\": {}, \"name\":\"postgres-credentials\", \"namespace\": \"db\"}, \"stringData\": {\"superUserPassword\": \"$superUserPassword\", \"replicationUserPassword\":\"$replicationUserPassword\"}, \"type\": \"Opaque\", \"immutable\": false}"'
+          resources:
+            limits:
+              memory: 32Mi
+            requests:
+              cpu: 5m
+              memory: 16Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+      securityContext:
+        runAsNonRoot: false
+      serviceAccountName: generate-credentials
+      restartPolicy: Never
+  ttlSecondsAfterFinished: 300
+  activeDeadlineSeconds: 60
+  backoffLimit: 3
+---
+#
+# Based on:
+#
+#     https://www.kubegres.io/doc/getting-started.html
+#     https://www.kubegres.io/doc/properties-explained.html
+#
+apiVersion: kubegres.reactive-tech.io/v1
+kind: Kubegres
+metadata:
+  name: postgres
+  namespace: db
+spec:
+
+   replicas: 3
+   image: postgres:16.1
+   port: 5432
+
+   database:
+      size: 256Mi
+      storageClassName: kubedemo-block
+      volumeMount: /var/lib/postgresql/data
+
+   resources:
+      limits:
+         memory: "4Gi"
+      requests:
+         memory: "1Gi"
+         cpu: "256m"
+
+   env:
+      - name: POSTGRES_PASSWORD
+        valueFrom:
+           secretKeyRef:
+              name: postgres-credentials
+              key: superUserPassword
+
+      - name: POSTGRES_REPLICATION_PASSWORD
+        valueFrom:
+           secretKeyRef:
+              name: postgres-credentials
+              key: replicationUserPassword
