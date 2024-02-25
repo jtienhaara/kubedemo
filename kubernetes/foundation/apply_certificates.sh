@@ -40,7 +40,7 @@ KUBECONFIG=$HOME/.kube/kubeconfig-kubedemo.yaml
 echo "  Installing cert-manager CRDs and resources all at once:"
 kubectl apply \
         --filename $CLUSTER_DIR/certificates-cert-manager-resources.yaml \
-        --kubeconfig ~/.kube/kubeconfig-kubedemo.yaml \
+        --kubeconfig $KUBECONFIG \
     || exit 1
 
 CERT_MANAGER_DEPLOYMENTS="cert-manager-cainjector cert-manager cert-manager-webhook"

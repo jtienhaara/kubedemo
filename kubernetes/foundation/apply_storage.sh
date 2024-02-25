@@ -28,20 +28,20 @@ kubectl apply \
         --filename $CLUSTER_DIR/storage-rook-crds.yaml \
         --filename $CLUSTER_DIR/storage-rook-common.yaml \
         --filename $CLUSTER_DIR/storage-rook-operator.yaml \
-        --kubeconfig ~/.kube/kubeconfig-kubedemo.yaml \
+        --kubeconfig $KUBECONFIG \
     || exit 1
 
 echo "  Creating Rook storage cluster:"
 kubectl apply \
         --filename $CLUSTER_DIR/storage-rook-cluster.yaml \
-        --kubeconfig ~/.kube/kubeconfig-kubedemo.yaml \
+        --kubeconfig $KUBECONFIG \
     || exit 1
 
 echo "  Creating Rook CephBlockPool:"
 kubectl apply \
         --filename $CLUSTER_DIR/storage-rook-blockpool.yaml \
         --filename $CLUSTER_DIR/storage-rook-storageclass.yaml \
-        --kubeconfig ~/.kube/kubeconfig-kubedemo.yaml \
+        --kubeconfig $KUBECONFIG \
     || exit 1
 
 echo "  Waiting for Rook/Ceph pods to be ready..."
