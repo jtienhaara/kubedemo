@@ -9,7 +9,15 @@
 #
 # Changes made from the original:
 #
-# None.
+# - Removed unused chunks (like ingress.*).
+# - global.storageClass from "" to "kubedemo-block".
+# - resources uncommented, set requests.* and limits.memory
+# - persistence.size from "10Gi" to "1Gi"
+# - extraVolumes added
+# - extraContainerVolumeMounts added
+# - extraInitVolumeMounts added
+# - gitea.metrics.enabled from "false" to "true"
+# - gitea.metrics.serviceMonitor.enabled from "false" to "true"
 #
 #
 # Default values for gitea.
@@ -28,7 +36,7 @@ global:
   ##   - myRegistryKeySecretName
   ##
   imagePullSecrets: []
-  storageClass: ""
+  storageClass: "kubedemo-block"
   hostAliases: []
   # - ip: 192.168.137.2
   #   hostnames:
@@ -173,40 +181,20 @@ service:
 ## @extra ingress.apiVersion Specify APIVersion of ingress object. Mostly would only be used for argocd.
 ingress:
   enabled: false
-  # className: nginx
-  className:
-  annotations:
-    {}
-    # kubernetes.io/ingress.class: nginx
-    # kubernetes.io/tls-acme: "true"
-  hosts:
-    - host: git.example.com
-      paths:
-        - path: /
-          pathType: Prefix
-  tls: []
-  #  - secretName: chart-example-tls
-  #    hosts:
-  #      - git.example.com
-  # Mostly for argocd or any other CI that uses `helm template | kubectl apply` or similar
-  # If helm doesn't correctly detect your ingress API version you can set it here.
-  # apiVersion: networking.k8s.io/v1
 
 ## @section deployment
 #
 ## @param resources Kubernetes resources
 resources:
-  {}
   # We usually recommend not to specify default resources and to leave this as a conscious
   # choice for the user. This also increases chances charts run on environments with little
   # resources, such as Minikube. If you do want to specify resources, uncomment the following
   # lines, adjust them as necessary, and remove the curly braces after 'resources:'.
-  # limits:
-  #   cpu: 100m
-  #   memory: 128Mi
-  # requests:
-  #   cpu: 100m
-  #   memory: 128Mi
+  limits:
+    memory: 512Mi
+  requests:
+    cpu: 100m
+    memory: 128Mi
 
 ## Use an alternate scheduler, e.g. "stork".
 ## ref: https://kubernetes.io/docs/tasks/administer-cluster/configure-multiple-schedulers/
@@ -280,7 +268,7 @@ persistence:
   create: true
   mount: true
   claimName: gitea-shared-storage
-  size: 10Gi
+  size: 1Gi
   accessModes:
     - ReadWriteOnce
   labels: {}
@@ -291,16 +279,22 @@ persistence:
     helm.sh/resource-policy: keep
 
 ## @param extraVolumes Additional volumes to mount to the Gitea deployment
-extraVolumes: []
-# - name: postgres-ssl-vol
-#   secret:
-#     secretName: gitea-postgres-ssl
+extraVolumes:
+  - name: gitea-config
+    secret:
+      secretName: gitea-config
 
 ## @param extraContainerVolumeMounts Mounts that are only mapped into the Gitea runtime/main container, to e.g. override custom templates.
-extraContainerVolumeMounts: []
+extraContainerVolumeMounts:
+  - name: gitea-config
+    mountPath: /data/gitea/conf/
+    readOnly: false
 
 ## @param extraInitVolumeMounts Mounts that are only mapped into the init-containers. Can be used for additional preconfiguration.
-extraInitVolumeMounts: []
+extraInitVolumeMounts:
+  - name: gitea-config
+    mountPath: /data/gitea/conf/
+    readOnly: false
 
 ## @deprecated The extraVolumeMounts variable has been split two:
 ## - extraContainerVolumeMounts
@@ -356,6 +350,7 @@ gitea:
   ## @param gitea.admin.existingSecret Use an existing secret to store admin user credentials
   ## @param gitea.admin.password Password for the Gitea admin user
   ## @param gitea.admin.email Email for the Gitea admin user
+  # !!! TODO good grief they put this into the Helm Chart fix me!
   admin:
     # existingSecret: gitea-admin-secret
     existingSecret:
@@ -366,9 +361,9 @@ gitea:
   ## @param gitea.metrics.enabled Enable Gitea metrics
   ## @param gitea.metrics.serviceMonitor.enabled Enable Gitea metrics service monitor
   metrics:
-    enabled: false
+    enabled: true
     serviceMonitor:
-      enabled: false
+      enabled: true
       #  additionalLabels:
       #    prometheus-release: prom1
 
@@ -499,6 +494,7 @@ gitea:
 ## @param redis-cluster.usePassword Whether to use password authentication
 ## @param redis-cluster.cluster.nodes Number of redis cluster master nodes
 ## @param redis-cluster.cluster.replicas Number of redis cluster master node replicas
+# TODO !!! Decide how to deal with caching: https://gitea.com/gitea/helm-chart/src/tag/v10.1.2#cache
 redis-cluster:
   enabled: true
   usePassword: false
@@ -524,7 +520,7 @@ postgresql-ha:
       database: gitea
       password: gitea
       username: gitea
-  enabled: true
+  enabled: false
   postgresql:
     repmgrPassword: changeme2
     postgresPassword: changeme1

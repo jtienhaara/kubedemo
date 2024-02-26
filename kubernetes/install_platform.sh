@@ -10,7 +10,11 @@ echo "  Installing platform components:"
 
 echo "    Applying database:"
 $RUN_DIR/platform/apply_database.sh \
-    || exit 7
+    || exit 1
+
+echo "    Applying git:"
+$RUN_DIR/platform/apply_git.sh \
+    || exit 1
 
 
 echo "SUCCESS Installing the platform for a Kubernetes demo."

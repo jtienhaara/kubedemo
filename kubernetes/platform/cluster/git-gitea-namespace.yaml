@@ -1,0 +1,22 @@
+#
+# Sets up a PostgreSQL database in our db cluster.
+#
+# Based on:
+#
+#     https://docs.gitea.com/installation/database-prep#postgresql
+#
+# According to the Postgres documentation, the default password encryption,
+# as of Postgres 16.x, is scram-sha-256 (a good thing; older Postgres used MD5).
+#
+#     https://www.postgresql.org/docs/current/runtime-config-connection.html#GUC-PASSWORD-ENCRYPTION
+#
+# TODO !!! However kubegres might override this?!?
+#          See comments in database-kubegres-cluster.yaml
+#
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  labels:
+    istio-injection: enabled
+  name: gitea

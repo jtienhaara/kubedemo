@@ -1,0 +1,24 @@
+#
+# !!! TODO Switch to Vault postgres credentials
+#
+# https://docs.gitea.com/administration/config-cheat-sheet
+#
+# In future, when the version changes, maybe we'll actually be able to use:
+#
+# https://docs.gitea.com/1.21.6/administration/config-cheat-sheet
+#
+apiVersion: v1
+kind: Secret
+metadata:
+  name: gitea-config
+  namespace: gitea
+type: Opaque
+immutable: false
+stringData:
+  app.ini: |-
+    [database]
+    DB_TYPE: postgres
+    HOST: postgres.db:5432
+    NAME: gitea
+    USER: gitea
+    PASSWD: "!!!gitea"

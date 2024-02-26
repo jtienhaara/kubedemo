@@ -1,0 +1,67 @@
+#
+# Sets up a PostgreSQL database in our db cluster.
+#
+# Based on:
+#
+#     https://docs.gitea.com/installation/database-prep#postgresql
+#
+# According to the Postgres documentation, the default password encryption,
+# as of Postgres 16.x, is scram-sha-256 (a good thing; older Postgres used MD5).
+#
+#     https://www.postgresql.org/docs/current/runtime-config-connection.html#GUC-PASSWORD-ENCRYPTION
+#
+# TODO !!! However kubegres might override this?!?
+#          See comments in database-kubegres-cluster.yaml
+#
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: create-db-gitea
+  namespace: db
+spec:
+  template:
+    spec:
+      containers:
+        - name: create-db
+          image: "postgres:16.1"
+          #
+          # TODO !!! I'm too tired to figure out where the \r\n is coming
+          #          from at the end of the Secret.
+          #          It's not there in the Secret itself, according to:
+          #              kubectl get secret postgres-credentials --namespace db --output jsonpath='{.data.superUserPassword}' --kubeconfig ~/.kube/kubeconfig-kubedemo.yaml | base64 -d | od -x -c
+          #          But in the environment variable it is:
+          #              command: ["sh", "-c", "echo \"$POSTGRES_PASSWORD\" | od -x -c"]
+          #          So we can't just use the env variable PGPASSWORD,
+          #          we have to strip the newline at runtime.  :(
+          #
+          # !!! TODO generate a postgres password in Vault
+          #
+          command:
+            - "sh"
+            - "-c"
+            - "export PGPASSWORD=`echo -n \"$POSTGRES_PASSWORD\" | tr -d ' \n\r\t'`; psql --username=postgres --no-password --host=postgres.db --port=5432 --command \"CREATE ROLE gitea WITH LOGIN PASSWORD '!!!gitea';\" postgres && psql --username=postgres --no-password --host=postgres.db --port=5432 --command \"CREATE DATABASE giteadb WITH OWNER gitea TEMPLATE template0 ENCODING UTF8 LC_COLLATE 'en_US.UTF-8' LC_CTYPE 'en_US.UTF-8';\" postgres"
+          resources:
+            limits:
+              memory: 32Mi
+            requests:
+              cpu: 5m
+              memory: 16Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+          env:
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-credentials
+                  key: superUserPassword
+      securityContext:
+        runAsNonRoot: false
+      serviceAccountName: generate-credentials
+      restartPolicy: Never
+  ttlSecondsAfterFinished: 300
+  activeDeadlineSeconds: 60
+  backoffLimit: 7
