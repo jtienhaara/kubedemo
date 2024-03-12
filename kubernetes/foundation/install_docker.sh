@@ -11,7 +11,7 @@ echo "  Checking sudo access:"
 sudo echo "  Granted sudo access." \
     || exit 1
 
-
+echo "  Installing docker:"
 sudo apt-get install -y docker.io \
     || exit 1
 

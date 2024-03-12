@@ -8,22 +8,26 @@ CSI_DRIVER_HELM_VERSION=1.4.1
 
 CLUSTER_DIR=/cloud-init/kubernetes/foundation/cluster
 KUBECONFIG=$HOME/.kube/kubeconfig-kubedemo.yaml
+RUN_DIR=`dirname $0`
 
-echo "  Unsealing vault Pods..."
-
-VAULT_KEYS=`cat $HOME/.vault_keys`
-if test -z "$VAULT_KEYS"
+if test ! -x "$RUN_DIR/sops_run.sh"
 then
-    echo "ERROR There is no $HOME/.vault_keys to unseal it." >&2
+    echo "ERROR sops_run.sh is required for $0, but is either missing or not executable: $RUN_DIR/sops_run.sh" >&2
     exit 1
 fi
 
-UNSEAL_KEYS=`echo "$VAULT_KEYS" \
-                 | grep '^Unseal Key [1-9][0-9]*:' \
-                 | sed 's|^Unseal Key [1-9][0-9]*:[ ]*\(.*\)$|\1|'`
-if test -z "$UNSEAL_KEYS"
+echo "Unsealing vault Pods..."
+
+AGE_KEYS_FILE=$HOME/age-keys.env
+VAULT_KEYS_FILE=$HOME/vault_keys.encrypted.env
+
+if test ! -e "$AGE_KEYS_FILE"
 then
-    echo "ERROR Could not determine the unseal keys from $HOME/.vault_keys" >&2
+    echo "ERROR No AGE public/private keys found to decrypt the Vault secrets - did apply_secrets.sh run?  $AGE_KEYS_FILE" >&2
+    exit 1
+elif test ! -e "$VAULT_KEYS_FILE"
+then
+    echo "ERROR No Vault unseal keys and root token file - did apply_secrets.sh run successfully?  $VAULT_KEYS_FILE" >&2
     exit 1
 fi
 
@@ -41,13 +45,9 @@ do
 
     for VAULT_POD in $VAULT_PODS
     do
-        UNSEAL_KEY_NUM=0
         IS_VAULT_POD_READY=false
-        for UNSEAL_KEY in $UNSEAL_KEYS
+        for UNSEAL_KEY_NUM in 1 2 3 4 5
         do
-            NEW_UNSEAL_KEY_NUM=`expr $UNSEAL_KEY_NUM + 1`
-            UNSEAL_KEY_NUM=$NEW_UNSEAL_KEY_NUM
-
             #
             # Race condition:
             # Sometimes one of the Pods will restart and not know it's initialized
@@ -69,12 +69,14 @@ do
             #     command terminated with exit code 2
             #
             echo "    Unsealing $VAULT_POD with unseal key $UNSEAL_KEY_NUM:"
-            kubectl exec \
-                "$VAULT_POD" --namespace vault --kubeconfig $KUBECONFIG -- \
-                vault operator unseal \
-                    -ca-cert /opt/vault/tls/$VAULT_POD/ca.crt \
-                    -non-interactive \
-                    "$UNSEAL_KEY"
+            $RUN_DIR/sops_run.sh \
+                "$VAULT_KEYS_FILE" \
+                kubectl exec \
+                    "$VAULT_POD" --namespace vault --kubeconfig $KUBECONFIG -- \
+                    vault operator unseal \
+                        -ca-cert /opt/vault/tls/$VAULT_POD/ca.crt \
+                        -non-interactive \
+                        "\$VAULT_UNSEAL_KEY_$UNSEAL_KEY_NUM"
 
             if test $UNSEAL_KEY_NUM -ge 3
             then
@@ -129,5 +131,5 @@ then
     exit 1
 fi
 
-echo "SUCCESS Installing secrets (HashiCorp Vault)."
+echo "SUCCESS Unsealing vault Pods."
 exit 0

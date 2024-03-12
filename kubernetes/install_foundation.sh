@@ -38,6 +38,10 @@ echo "    Installing istioctl:"
 sudo $RUN_DIR/foundation/install_istioctl.sh \
     || exit 2
 
+echo "    Installing sops:"
+sudo $RUN_DIR/foundation/install_sops.sh \
+    || exit 2
+
 
 echo "  Installing troubleshooting tools:"
 

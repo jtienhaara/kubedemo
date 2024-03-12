@@ -3,6 +3,13 @@
 #
 # HashiCorp Vault for secrets management.
 #
+# We also store out-of-cluster secrets (like the root token generated
+# by Vault) in SOPS with AGE encryption.  The way we do it here is
+# automated and completely insecure (putting the AGE private key itself
+# in a plain text file), but the idea is to demonstrate layers of
+# security without resorting to an external password manager (BitWarden
+# or etc).
+#
 # Version 0.25.0 of the Vault Helm chart (1.14.0 of Vault) is from:
 #
 #     https://github.com/hashicorp/vault-helm/releases
@@ -78,6 +85,36 @@ echo "Installing secrets (HashiCorp Vault)..."
 
 CLUSTER_DIR=/cloud-init/kubernetes/foundation/cluster
 KUBECONFIG=$HOME/.kube/kubeconfig-kubedemo.yaml
+
+RUN_DIR=`dirname $0`
+
+if test ! -x "$RUN_DIR/sops_run.sh"
+then
+    echo "ERROR sops_run.sh is required for $0, but is either missing or not executable: $RUN_DIR/sops_run.sh" >&2
+    exit 1
+fi
+
+AGE_KEYS_FILE=$HOME/age-keys.env
+if test ! -f "$AGE_KEYS_FILE"
+then
+    echo "  Creating AGE public and private encryption keys:"
+    age-keygen \
+        | awk \
+              '
+               $0 ~ /^# public key: .*$/ {
+                   print "export KUBEDEMO_PUBLIC_KEY=" $4;
+               }
+               $1 ~ /^AGE-SECRET-KEY-.*$/ {
+                   print "export KUBEDEMO_PRIVATE_KEY=" $1; }
+              ' \
+                  >> "$AGE_KEYS_FILE" \
+                  || exit 1
+fi
+
+echo "  Sourcing AGE encryption keys from $AGE_KEYS_FILE:"
+. "$AGE_KEYS_FILE" \
+    || exit 1
+
 
 echo "  Adding secrets store CSI driver Helm repo:"
 helm repo add secrets-store-csi-driver \
@@ -212,22 +249,83 @@ then
         exit 1
     fi
 
-    echo "  Storing Vault unseal keys and initial root token in $HOME/.vault_keys:"
-    touch $HOME/.vault_keys \
+    # VAULT_UNSEAL_KEY_1=MBFSDepD9E6whREc6Dj+k3pMaKJ6cCnCUWcySJQymObb
+    # VAULT_UNSEAL_KEY_2=zQj4v22k9ixegS+94HJwmIaWLBL3nZHe1i+b/wHz25fr
+    # VAULT_UNSEAL_KEY_3=7dbPPeeGGW3SmeBFFo04peCKkXFuuyKc8b2DuntA4VU5
+    # VAULT_UNSEAL_KEY_4=tLt+ME7Z7hYUATfWnuQdfCEgnKA2L173dptAwfmenCdf
+    # VAULT_UNSEAL_KEY_5=vYt9bxLr0+OzJ8m7c7cNMFj7nvdLljj0xWRbpLezFAI9
+    # VAULT_INITIAL_ROOT_TOKEN=s.zJNwZlRrqISjyBHFMiEca6GF
+    echo "  Extracting Vault unseal keys and initial root token into env:"
+    VAULT_ENV=`echo "$VAULT_KEYS" \
+                   | awk '
+                          $0 ~ /^[ ]*Unseal Key [1-9][0-9]*: .*$/ {
+                              unseal_key_num = $3;
+                              gsub(/:/, "", unseal_key_num);
+                              print "VAULT_UNSEAL_KEY_" unseal_key_num "=" $4;
+                          }
+                          $0 ~ /^[ ]*Initial Root Token: .*$/ {
+                              print "VAULT_INITIAL_ROOT_TOKEN=" $4;
+                          }
+                         '`
+    if test $? -ne 0 \
+            -o -z "$VAULT_ENV"
+    then
+        echo "ERROR Failed to turn Vault keys into environment variables" >&2
+        exit 1
+    fi
+
+    echo "  Storing Vault unseal keys and initial root token in $HOME/vault_keys.decrypted.env:"
+    touch $HOME/vault_keys.decrypted.env \
         || exit 1
-    echo "$VAULT_KEYS" \
-         > $HOME/.vault_keys \
+    echo "$VAULT_ENV" \
+         > $HOME/vault_keys.decrypted.env \
         || exit 1
-    chmod u-wx,go-rwx $HOME/.vault_keys \
+
+    echo "  Encrypting $HOME/vault_keys.decrypted.env -> $HOME/vault_keys.encrypted.env:"
+    sops --encrypt \
+        --age "$KUBEDEMO_PUBLIC_KEY" \
+        --output "$HOME/vault_keys.encrypted.env" \
+        "$HOME/vault_keys.decrypted.env" \
+        || exit 1
+    chmod u-wx,go-rwx $HOME/vault_keys.encrypted.env \
+        || exit 1
+    rm -f "$HOME/vault_keys.decrypted.env" \
         || exit 1
 else
-    VAULT_KEYS=`cat $HOME/.vault_keys`
-    if test -z "$VAULT_KEYS"
+    VAULT_ENV=`cat $HOME/vault_keys.encrypted.env`
+    if test -z "$VAULT_ENV"
     then
-        echo "ERROR Vault has already been initialized, but there is no $HOME/.vault_keys to unseal it." >&2
+        echo "ERROR Vault has already been initialized, but there is no $HOME/vault_keys.encrypted.env to unseal it." >&2
         exit 1
     fi
 fi
+
+$RUN_DIR/sops_run.sh \
+    "$HOME/vault_keys.encrypted.env" \
+    '
+        IS_OK=true
+        if test -z "$VAULT_UNSEAL_KEY_1" \
+            -o -z "$VAULT_UNSEAL_KEY_2" \
+            -o -z "$VAULT_UNSEAL_KEY_3" \
+            -o -z "$VAULT_UNSEAL_KEY_4" \
+            -o -z "$VAULT_UNSEAL_KEY_5"
+        then
+            IS_OK=false
+            echo "ERROR VAULT_UNSEAL_KEY_... (1-5) variable(s) not set!" >&2
+        fi
+        if test -z "$VAULT_INITIAL_ROOT_TOKEN"
+        then
+            IS_OK=false
+            echo "ERROR VAULT_INITIAL_ROOT_TOKEN variable is not set!" >&2
+        fi
+        if test "$IS_OK" == "true"
+        then
+            exit 0
+        else
+            exit 1
+        fi
+    ' \
+        || exit 1
 
 echo "SUCCESS Installing secrets (HashiCorp Vault)."
 exit 0

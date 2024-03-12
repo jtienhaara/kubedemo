@@ -10,26 +10,27 @@ echo "Integrating Vault secrets with apps..."
 
 CLUSTER_DIR=/cloud-init/kubernetes/foundation/cluster
 KUBECONFIG=$HOME/.kube/kubeconfig-kubedemo.yaml
+RUN_DIR=`dirname $0`
 
-echo "  Retrieving login info for Vault:"
-VAULT_KEYS=`cat $HOME/.vault_keys`
-if test -z "$VAULT_KEYS"
+if test ! -x "$RUN_DIR/vault_run.sh"
 then
-    echo "ERROR Vault keys do not exist - has apply_secrets.sh been run?  $HOME/.vault_keys" >&2
+    echo "ERROR vault_run.sh is required for $0, but is either missing or not executable: $RUN_DIR/vault_run.sh" >&2
     exit 1
 fi
 
-#
-# Need to login to Vault:
-#
-VAULT_ROOT_TOKEN=`echo "$VAULT_KEYS" \
-                      | grep 'Initial Root Token: ' \
-                      | sed 's|^Initial Root Token:[ ]*||'`
-if test -z "$VAULT_ROOT_TOKEN"
+AGE_KEYS_FILE=$HOME/age-keys.env
+VAULT_KEYS_FILE=$HOME/vault_keys.encrypted.env
+
+if test ! -e "$AGE_KEYS_FILE"
 then
-    echo "ERROR Could not determine Initial Root Token from $HOME/.vault_keys" >&2
+    echo "ERROR No AGE public/private keys found to decrypt the Vault secrets - did apply_secrets.sh run?  $AGE_KEYS_FILE" >&2
+    exit 1
+elif test ! -e "$VAULT_KEYS_FILE"
+then
+    echo "ERROR No Vault unseal keys and root token file - did apply_secrets.sh run successfully?  $VAULT_KEYS_FILE" >&2
     exit 1
 fi
+
 
 #
 # Needed to enable metrics.  From:
@@ -43,24 +44,14 @@ path "/sys/metrics" {
 '
 
 echo "  Enabling Vault metrics /v1/sys/metrics:"
-echo "$VAULT_ROOT_TOKEN" \
-    | kubectl exec -i vault-0 \
-              --namespace vault \
-              --kubeconfig $KUBECONFIG \
-              -- \
-              sh -c 'vault login \
-                         -ca-cert /opt/vault/tls/vault-0/ca.crt \
-                         -client-cert /opt/vault/tls/vault-0/tls.crt \
-                         -client-key /opt/vault/tls/vault-0/tls.key \
-                         -no-print \
-                         - \
-                         && echo "$VAULT_METRICS_POLICY" \
-                                | vault policy write \
-                                      -ca-cert /opt/vault/tls/vault-0/ca.crt \
-                                      -client-cert /opt/vault/tls/vault-0/tls.crt \
-                                      -client-key /opt/vault/tls/vault-0/tls.key \
-                                      -non-interactive \
-                                      prometheus-metrics -' \
+$RUN_DIR/vault_run.sh \
+    "echo '$VAULT_METRICS_POLICY' \
+         | vault policy write \
+               -ca-cert /opt/vault/tls/vault-0/ca.crt \
+               -client-cert /opt/vault/tls/vault-0/tls.crt \
+               -client-key /opt/vault/tls/vault-0/tls.key \
+               -non-interactive \
+               prometheus-metrics -" \
     || exit 1
 
 echo "SUCCESS Integrating Vault secrets with apps."

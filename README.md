@@ -108,7 +108,7 @@ host machine and of the VM (how many CPUs you've allocated, etc).
 
 SSH into your VM (e.g. `./var/lib/vms/kubedemo/bin/ssh.sh` if you built the VM using create_vm.sh) and run:
 
-    /cloud-init/kubernetes/install_foundation.sh
+    /cloud-init/kubernetes/install.sh
 
 This will install pre-requisite software, then step through the various pieces to install the "foundation" layer of kubedemo, which includes:
 
@@ -125,7 +125,7 @@ This will install pre-requisite software, then step through the various pieces t
 - logging: Loki and Promtail
   https://grafana.com/oss/loki/
 
-The foundation layer is still being built up, work in progress.  Platform layer next, then application layer, and eventually operations layer...  One of these days this'll be done.
+The layers (foundation, platform, application, operations) are still being built up, work in progress.  Platform layer is the current main focus, then application layer, and eventually operations layer...  One of these days this'll be done.
 
 ## Disks warning
 
