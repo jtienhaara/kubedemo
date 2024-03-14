@@ -31,6 +31,10 @@ then
     exit 1
 fi
 
+echo "  Sourcing AGE encryption keys from $AGE_KEYS_FILE:"
+. "$AGE_KEYS_FILE" \
+    || exit 1
+
 VAULT_PODS="vault-0 vault-1 vault-2"
 IS_ALL_READY=true
 MAX_TRIES=3

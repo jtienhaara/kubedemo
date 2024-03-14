@@ -31,6 +31,30 @@ then
     exit 1
 fi
 
+#
+# Enable Kubernetes authentication, so we can mount Vault secrets
+# using CSI.
+#
+echo "  Enabling Vault Kubernetes authentication:"
+$RUN_DIR/vault_run.sh \
+    "vault auth enable \
+         -ca-cert /opt/vault/tls/vault-0/ca.crt \
+         -client-cert /opt/vault/tls/vault-0/tls.crt \
+         -client-key /opt/vault/tls/vault-0/tls.key \
+         -non-interactive \
+         kubernetes" \
+    || exit 1
+
+echo "    Configuring Vault Kubernetes authentication:"
+$RUN_DIR/vault_run.sh \
+    'vault write \
+         -ca-cert /opt/vault/tls/vault-0/ca.crt \
+         -client-cert /opt/vault/tls/vault-0/tls.crt \
+         -client-key /opt/vault/tls/vault-0/tls.key \
+         -non-interactive \
+         auth/kubernetes/config \
+         kubernetes_host="https://$KUBERNETES_PORT_443_TCP_ADDR:443"' \
+    || exit 1
 
 #
 # Needed to enable metrics.  From:
@@ -52,6 +76,33 @@ $RUN_DIR/vault_run.sh \
                -client-key /opt/vault/tls/vault-0/tls.key \
                -non-interactive \
                prometheus-metrics -" \
+    || exit 1
+
+$RUN_DIR/vault_run.sh \
+    "vault write \
+         -ca-cert /opt/vault/tls/vault-0/ca.crt \
+         -client-cert /opt/vault/tls/vault-0/tls.crt \
+         -client-key /opt/vault/tls/vault-0/tls.key \
+         -non-interactive \
+         auth/kubernetes/role/metrics \
+         bound_service_account_names=prometheus-k8s \
+         bound_service_account_namespaces=monitoring \
+         policies=prometheus-metrics" \
+    || exit 1
+
+#
+# Enable some secrets engines:
+#
+#     - key/value (version 2)
+#
+echo "  Enabling Vault kv (version 2) secrets:"
+$RUN_DIR/vault_run.sh \
+    "vault secrets enable \
+         -ca-cert /opt/vault/tls/vault-0/ca.crt \
+         -client-cert /opt/vault/tls/vault-0/tls.crt \
+         -client-key /opt/vault/tls/vault-0/tls.key \
+         -non-interactive \
+         kv-v2" \
     || exit 1
 
 echo "SUCCESS Integrating Vault secrets with apps."
