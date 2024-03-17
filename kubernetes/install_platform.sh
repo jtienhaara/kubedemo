@@ -12,6 +12,10 @@ echo "    Applying database:"
 $RUN_DIR/platform/apply_database.sh \
     || exit 1
 
+echo "    Creating database cluster:"
+$RUN_DIR/platform/create_database.sh \
+    || exit 1
+
 echo "    Applying git:"
 $RUN_DIR/platform/apply_git.sh \
     || exit 1

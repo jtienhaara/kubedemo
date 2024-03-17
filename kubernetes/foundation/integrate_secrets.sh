@@ -11,10 +11,11 @@ echo "Integrating Vault secrets with apps..."
 CLUSTER_DIR=/cloud-init/kubernetes/foundation/cluster
 KUBECONFIG=$HOME/.kube/kubeconfig-kubedemo.yaml
 RUN_DIR=`dirname $0`
+VAULT_RUN="$RUN_DIR/vault_run.sh"
 
-if test ! -x "$RUN_DIR/vault_run.sh"
+if test ! -x "$VAULT_RUN"
 then
-    echo "ERROR vault_run.sh is required for $0, but is either missing or not executable: $RUN_DIR/vault_run.sh" >&2
+    echo "ERROR vault_run.sh is required for $0, but is either missing or not executable: $VAULT_RUN" >&2
     exit 1
 fi
 
@@ -36,7 +37,7 @@ fi
 # using CSI.
 #
 echo "  Enabling Vault Kubernetes authentication:"
-$RUN_DIR/vault_run.sh \
+$VAULT_RUN \
     "vault auth enable \
          -ca-cert /opt/vault/tls/vault-0/ca.crt \
          -client-cert /opt/vault/tls/vault-0/tls.crt \
@@ -46,7 +47,7 @@ $RUN_DIR/vault_run.sh \
     || exit 1
 
 echo "    Configuring Vault Kubernetes authentication:"
-$RUN_DIR/vault_run.sh \
+$VAULT_RUN \
     'vault write \
          -ca-cert /opt/vault/tls/vault-0/ca.crt \
          -client-cert /opt/vault/tls/vault-0/tls.crt \
@@ -68,7 +69,7 @@ path "/sys/metrics" {
 '
 
 echo "  Enabling Vault metrics /v1/sys/metrics:"
-$RUN_DIR/vault_run.sh \
+$VAULT_RUN \
     "echo '$VAULT_METRICS_POLICY' \
          | vault policy write \
                -ca-cert /opt/vault/tls/vault-0/ca.crt \
@@ -78,7 +79,7 @@ $RUN_DIR/vault_run.sh \
                prometheus-metrics -" \
     || exit 1
 
-$RUN_DIR/vault_run.sh \
+$VAULT_RUN \
     "vault write \
          -ca-cert /opt/vault/tls/vault-0/ca.crt \
          -client-cert /opt/vault/tls/vault-0/tls.crt \
@@ -96,13 +97,66 @@ $RUN_DIR/vault_run.sh \
 #     - key/value (version 2)
 #
 echo "  Enabling Vault kv (version 2) secrets:"
-$RUN_DIR/vault_run.sh \
+$VAULT_RUN \
     "vault secrets enable \
          -ca-cert /opt/vault/tls/vault-0/ca.crt \
          -client-cert /opt/vault/tls/vault-0/tls.crt \
          -client-key /opt/vault/tls/vault-0/tls.key \
          -non-interactive \
+         -path=secret/data \
          kv-v2" \
+    || exit 1
+
+#
+# From:
+#
+#     https://developer.hashicorp.com/vault/docs/secrets/kv/kv-v2#writing-reading-arbitrary-data
+#
+# (Cf. "You can also use Vault's password policy feature to generate arbitrary values.")
+#
+#     https://developer.hashicorp.com/vault/docs/concepts/password-policies
+#
+# Each password must have:
+#
+#     - 32 characters (ridiculously long)
+#     - at least 1 lower case ASCii letter
+#     - at least 1 upper case ASCii letter
+#     - at least 1 ASCii digit
+#     - at least 1 ASCii punctuation / symbol
+#
+VAULT_PASSWORD_POLICY='
+  length=32
+
+  rule "charset" {
+    charset = "abcdefghijklmnopqrstuvwxyz"
+    min-chars = 1
+  }
+
+  rule "charset" {
+    charset = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+    min-chars = 1
+  }
+
+  rule "charset" {
+    charset = "0123456789"
+    min-chars = 1
+  }
+
+  rule "charset" {
+    charset = "`~!@#%^&*()-_=+[{]}|;:,<.>/?"
+    min-chars = 1
+  }
+'
+
+echo "  Creating password policy in Vault for auto-generated passwords:"
+$VAULT_RUN \
+    "echo '$VAULT_PASSWORD_POLICY' \
+         | vault write \
+               -ca-cert /opt/vault/tls/vault-0/ca.crt \
+               -client-cert /opt/vault/tls/vault-0/tls.crt \
+               -client-key /opt/vault/tls/vault-0/tls.key \
+               -non-interactive \
+               sys/policies/password/kubedemo-password policy=-" \
     || exit 1
 
 echo "SUCCESS Integrating Vault secrets with apps."

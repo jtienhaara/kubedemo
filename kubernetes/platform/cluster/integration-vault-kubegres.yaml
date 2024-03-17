@@ -1,0 +1,44 @@
+#
+# Generates credentials for kubegres (PostgreSQL) from HashiCorp Vault.
+#
+# Based on:
+#
+#     https://www.kubegres.io/doc/getting-started.html
+#     https://developer.hashicorp.com/vault/docs/secrets/kv/kv-v2
+#
+# We basically generate random numbers for the PostgreSQL superuser and
+# replication passwords.  We store them in Vault, so that we can
+# use CSI Secrets to mount the passwords into the PostgreSQL StatefulSet.
+#
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: generate-kubegres-credentials
+  namespace: vault
+spec:
+  template:
+    spec:
+      containers:
+        - name: vault-client
+          image: "hashicorp/vault:1.14.0"
+          command:
+            - "sh"
+            - "-c"
+            - 'echo "$VAULT_ROOT_TOKEN" \
+                   vault login \
+                       -ca-cert /opt/vault/tls/vault-0/ca.crt \
+                       -client-cert /opt/vault/tls/vault-0/tls.crt \
+                       -client-key /opt/vault/tls/vault-0/tls.key \
+                       -address vault-active.vault \
+                       -no-print \
+                       - \
+                       && vault secrets enable -version=2 kv \
+                       && vault kv put secret/data/kubedemo-kubegres \
+                              superUserPassword=`od --read-bytes 32 --format u --address-radix none /dev/urandom | tr -d " \n"` \
+                              replicationUserPassword=`od --read-bytes 32 --format u --address-radix none /dev/urandom | tr -d " \n"`
+              '
+      restartPolicy: Never
+  ttlSecondsAfterFinished: 300
+  activeDeadlineSeconds: 60
+  backoffLimit: 3

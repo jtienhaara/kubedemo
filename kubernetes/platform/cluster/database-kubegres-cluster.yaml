@@ -1,21 +1,21 @@
 #
-# Generate credentials for kubegres (PostgreSQL) from HashiCorp Vault,
-# then deploy a PostgreSQL cluster, in the "db" namespace.
+# A high availability PostgreSQL cluster, in the "db" namespace.
 #
-# We use one PostgreSQL cluster for all micro-services.  If you want
-# one cluster per micro-service, copy-pasta this manifest, but change
-# the namespace (one kubegres cluster per namespace).
+# We use one PostgreSQL cluster for all micro-services.
+#
+# If you want one database cluster per micro-service, then you'll need to
+# copy-pasta this manifest, but change the namespace (one database cluster
+# per namespace).
 #
 # Based on:
 #
 #     https://www.kubegres.io/doc/getting-started.html
 #
-# We basically generate random numbers for the PostgreSQL superuser and
-# replication passwords.
+# We expect the passwords for the PostgreSQL root and replication users
+# to have already been created in Vault, and exposed to Kubernetes
+# ServiceAccount "dbadmin" for read capability.
 #
-# TODO Should store in Vault kv.
-#
-# Note that the default password encryption, as of Postgres 16.x, is
+# Note that the default password hashing, as of Postgres 16.x, is
 # scram-sha-256 (a good thing; older Postgres used MD5).
 #
 #     https://www.postgresql.org/docs/current/runtime-config-connection.html#GUC-PASSWORD-ENCRYPTION
@@ -32,123 +32,96 @@
 #      host    all             all             all                     md5
 #      host    all             all             0.0.0.0/0               reject
 #
-#     I.e. lots of md5 password encryption!  :(
+#     I.e. lots of passwords using md5 hashing!  :(
 #
 ---
-apiVersion: v1
-kind: Namespace
-metadata:
-  labels:
-    istio-injection: disabled  # TODO !!! set to enabled
-  name: db
----
-apiVersion: v1
-kind: ServiceAccount
-metadata:
-  labels:
-    app.kubernetes.io/component: rbac
-    app.kubernetes.io/created-by: kubedemo
-    app.kubernetes.io/instance: generate-credentials
-    app.kubernetes.io/name: serviceaccount
-    app.kubernetes.io/part-of: kubedemo
-  name: generate-credentials
-  namespace: db
----
-apiVersion: rbac.authorization.k8s.io/v1
-kind: Role
-metadata:
-  labels:
-    app.kubernetes.io/component: rbac
-    app.kubernetes.io/created-by: kubedemo
-    app.kubernetes.io/instance: generate-credentials-role
-    app.kubernetes.io/name: serviceaccount
-    app.kubernetes.io/part-of: kubedemo
-  name: generate-credentials-role
-  namespace: db
-rules:
-  - apiGroups:
-      - ""
-    resources:
-      - secrets
-    verbs:
-      - update
----
-apiVersion: rbac.authorization.k8s.io/v1
-kind: RoleBinding
-metadata:
-  labels:
-    app.kubernetes.io/component: rbac
-    app.kubernetes.io/created-by: kubedemo
-    app.kubernetes.io/instance: generate-credentials-rolebinding
-    app.kubernetes.io/name: serviceaccount
-    app.kubernetes.io/part-of: kubedemo
-  name: generate-credentials-rolebinding
-  namespace: db
-roleRef:
-  apiGroup: rbac.authorization.k8s.io
-  kind: Role
-  name: generate-credentials-role
-subjects:
-  - kind: ServiceAccount
-    name: generate-credentials
-    namespace: db
----
 #
-# Temporary blank Secret; the Job will create a real one.
+# Based on:
 #
-apiVersion: v1
-kind: Secret
+#     https://developer.hashicorp.com/vault/tutorials/kubernetes/kubernetes-secret-store-driver
+#     https://secrets-store-csi-driver.sigs.k8s.io/topics/sync-as-kubernetes-secret
+#     https://developer.hashicorp.com/vault/docs/platform/k8s/csi
+#
+apiVersion: secrets-store.csi.x-k8s.io/v1
+kind: SecretProviderClass
 metadata:
-  name: postgres-credentials
-  namespace: db
-type: Opaque
-immutable: false
-stringData:
-  replicationUserPassword: ""
-  superUserPassword: ""
----
-apiVersion: batch/v1
-kind: Job
-metadata:
-  name: generate-postgres-credentials
+  name: postgres-passwords
   namespace: db
 spec:
-  template:
-    spec:
-      containers:
-        #
-        # From:
-        #     https://kubernetes.io/docs/tasks/run-application/access-api-from-pod/#without-using-a-proxy
-        #     https://kubernetes.io/docs/reference/kubernetes-api/config-and-storage-resources/secret-v1/#update-replace-the-specified-secret
-        #
-        # TODO: Remove --insecure once error is sorted out:
-        #       "curl: (60) SSL certificate problem: unable to get local issuer certificate"
-        #       (Tried both $KUBERNETES_SERVICE_HOST and kubernetes.default.svc)
-        #
-        - name: generate-credentials
-          image: "curlimages/curl:8.6.0"
-          command:
-            - "sh"
-            - "-c"
-            - 'echo "Creating Kubernetes Secret \"postgres-credentials\"..." && superUserPassword=`od --read-bytes 32 --format u --address-radix none /dev/urandom | tr -d " \n"` && replicationUserPassword=`od --read-bytes 32 --format u --address-radix none /dev/urandom | tr -d " \n"` && KUBERNETES_API_TOKEN=`cat /var/run/secrets/kubernetes.io/serviceaccount/token` && curl --insecure --fail-with-body --request PUT -cacert /var/run/secrets/kubernetes.io/serviceaccount/ca.crt --header "Authorization: Bearer $KUBERNETES_API_TOKEN" --header "Content-Type: application/json" "https://$KUBERNETES_SERVICE_HOST:$KUBERNETES_SERVICE_PORT/api/v1/namespaces/db/secrets/postgres-credentials" --data "{\"apiVersion\": \"v1\", \"kind\": \"Secret\", \"metadata\": {\"annotations\": {}, \"labels\": {}, \"name\":\"postgres-credentials\", \"namespace\": \"db\"}, \"stringData\": {\"superUserPassword\": \"$superUserPassword\", \"replicationUserPassword\":\"$replicationUserPassword\"}, \"type\": \"Opaque\", \"immutable\": true}" && echo "SUCCESS Creating Kubernetes Secret \"postgres-credentials\"."'
-          resources:
-            limits:
-              memory: 32Mi
-            requests:
-              cpu: 5m
-              memory: 16Mi
-          securityContext:
-            allowPrivilegeEscalation: false
-            capabilities:
-              drop:
-                - ALL
-      securityContext:
-        runAsNonRoot: false
-      serviceAccountName: generate-credentials
-      restartPolicy: Never
-  ttlSecondsAfterFinished: 300
-  activeDeadlineSeconds: 60
-  backoffLimit: 3
+  provider: vault
+  parameters:
+    #
+    # Ugh can't currently use "https://vault.vault:8200" for CSI (sigh):
+    #
+    #     Warning  FailedMount             4s                 kubelet
+    #     MountVolume.SetUp failed for volume "postgres-passwords" :
+    #     rpc error: code = Unknown desc = failed to mount secrets store
+    #     objects for pod db/postgres-1-0, err: rpc error: code = Unknown
+    #     desc = error making mount request: couldn't read secret
+    #     "superUserPassword": failed to login:
+    #     Post "https://vault.vault:8200/v1/auth/kubernetes/login":
+    #     tls: failed to verify certificate: x509: certificate is valid
+    #     for vault-0.vault-internal,
+    #     vault-0.vault-internal.vault.svc.cluster.local, not vault.vault
+    #
+    # !!! vaultAddress: "https://vault-0.vault-internal:8200"
+    vaultAddress: "https://vault.vault:8200"
+    vaultCACertPath: "/opt/vault/tls/vault/ca.crt"
+    roleName: "database-admin"
+    objects: |
+      - objectName: "superUserPassword"
+        secretPath: "secret/data/postgres-passwords"
+        secretKey: "superUserPassword"
+      - objectName: "replicationUserPassword"
+        secretPath: "secret/data/postgres-passwords"
+        secretKey: "replicationUserPassword"
+  secretObjects:  # desired state of synced K8s secret objects
+  - data:
+    - key: superUserPassword
+      objectName: superUserPassword
+    - key: replicationUserPassword
+      objectName: replicationUserPassword
+    secretName: postgres-passwords  # name of the Kubernetes Secret object
+    type: Opaque
+---
+#
+# We request a fake certificate, only so that we can get the root
+# certificate authority (CA) certificate from cert-manager.  Grumpf.
+#
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: db-vault-client-certificate
+  namespace: db
+spec:
+  secretName: db-vault-client-certificate
+  duration: 2160h  # 90 days - fine for our kubedemo.
+  renewBefore: 360h  # 15 days - fine for our kubedemo.
+  subject:
+    organizations:
+      - db
+  # The use of the common name field has been deprecated since 2000 and is
+  # discouraged from being used.
+  # commonName: postgres.db
+  isCA: false
+  privateKey:
+    algorithm: RSA
+    encoding: PKCS1
+    size: 2048
+  usages:
+    - client auth
+  # At least one of a DNS Name, URI, IP address or otherName is required.
+  # Vault requires 127.0.0.1 to unseal, because, by default, the environment
+  # variable VAULT_ADDR is populated as https://127.0.0.1:8200.
+  dnsNames:
+    - postgres.db
+    - postgres.db.svc.cluster.local
+  ipAddresses:
+    - 127.0.0.1
+  issuerRef:
+    name: kubedemo-issuer
+    kind: ClusterIssuer
 ---
 #
 # Based on:
@@ -163,31 +136,67 @@ metadata:
   namespace: db
 spec:
 
-   replicas: 3
-   image: postgres:16.1
-   port: 5432
+  replicas: 3
+  image: postgres:16.1
+  port: 5432
 
-   database:
-      size: 256Mi
-      storageClassName: kubedemo-block
-      volumeMount: /var/lib/postgresql/data
+  database:
+    size: 256Mi
+    storageClassName: kubedemo-block
+    volumeMount: /var/lib/postgresql/data
 
-   resources:
-      limits:
-         memory: "4Gi"
-      requests:
-         memory: "1Gi"
-         cpu: "256m"
+  resources:
+    limits:
+      memory: "4Gi"
+    requests:
+      memory: "1Gi"
+      cpu: "256m"
 
-   env:
-      - name: POSTGRES_PASSWORD
-        valueFrom:
-           secretKeyRef:
-              name: postgres-credentials
-              key: superUserPassword
+  volume:
+    volumes:
+      #
+      # For communicating (via CSI secrets provider) with Vault:
+      #
+      - name: db-vault-client-certificate
+        secret:
+          secretName: db-vault-client-certificate
+      #
+      # The actual Postgres passwords CSI secret volume:
+      #
+      - name: postgres-passwords
+        csi:
+          driver: secrets-store.csi.k8s.io
+          readOnly: true
+          volumeAttributes:
+            secretProviderClass: "postgres-passwords"
 
-      - name: POSTGRES_REPLICATION_PASSWORD
-        valueFrom:
-           secretKeyRef:
-              name: postgres-credentials
-              key: replicationUserPassword
+    volumeMounts:
+      #
+      # For communicating (via CSI secrets provider) with Vault:
+      #
+      - name: db-vault-client-certificate
+        mountPath: "/opt/vault/tls/vault"
+        readOnly: true
+      #
+      # The actual Postgres passwords CSI secret mount:
+      #
+      - name: postgres-passwords
+        mountPath: /etc/postgres-passwords
+
+  env:
+    - name: FOO
+      valueFrom:
+        secretKeyRef:
+          name: db-vault-client-certificate
+          key: ca.crt
+    - name: POSTGRES_PASSWORD
+      valueFrom:
+        secretKeyRef:
+          name: postgres-passwords
+          key: superUserPassword
+
+    - name: POSTGRES_REPLICATION_PASSWORD
+      valueFrom:
+        secretKeyRef:
+          name: postgres-passwords
+          key: replicationUserPassword

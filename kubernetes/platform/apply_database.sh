@@ -18,6 +18,14 @@ echo "Installing database (kubegres $KUBEGRES_VERSION)..."
 
 CLUSTER_DIR=/cloud-init/kubernetes/platform/cluster
 KUBECONFIG=$HOME/.kube/kubeconfig-kubedemo.yaml
+RUN_DIR=`dirname $0`
+VAULT_RUN="$RUN_DIR/../foundation/vault_run.sh"
+
+if test ! -x "$VAULT_RUN"
+then
+    echo "ERROR vault_run.sh is required for $0, but is either missing or not executable: $VAULT_RUN" >&2
+    exit 1
+fi
 
 echo "  Installing kubegres CRDs and operator:"
 kubectl apply \
@@ -78,56 +86,106 @@ then
     exit 1
 fi
 
-echo "  Creating db.postgres database cluster:"
+
+echo "  Creating 'db' Namespace:"
 kubectl apply \
-        --filename $CLUSTER_DIR/database-kubegres-cluster.yaml \
+        --filename $CLUSTER_DIR/database-db-namespace.yaml \
         --kubeconfig $KUBECONFIG \
     || exit 1
 
-POSTGRES_STATEFULSETS="postgres-1-0 postgres-2-0 postgres-3-0"
-
-echo "  Waiting for postgres StatefulSets ($POSTGRES_STATEFULSETS) to be ready..."
-# 5 minutes should be plenty for the postgresql pods.
-MAX_SECONDS=300
-SLEEP_SECONDS=30
-TOTAL_SECONDS=0
-while test $TOTAL_SECONDS -lt $MAX_SECONDS
-do
-    NUM_STATEFULSETS_READY=`kubectl get statefulsets \
-                                --namespace db \
-                                --kubeconfig $KUBECONFIG \
-                                | awk '$2 == "1/1" { print $0; }' \
-                                | wc -l \
-                                2>&1`
-    if test $? -ne 0 \
-            -o $NUM_STATEFULSETS_READY -lt 3
-    then
-        if test $TOTAL_SECONDS -eq 0
-        then
-            echo "    Not all 3 postgres StatefulSets are up yet: $NUM_STATEFULSETS_READY"
-        else
-            echo "      ... $NUM_STATEFULSETS_READY ($TOTAL_SECONDS s / $MAX_SECONDS s)"
-        fi
-        sleep $SLEEP_SECONDS
-        NEW_TOTAL_SECONDS=`expr $TOTAL_SECONDS + $SLEEP_SECONDS`
-        TOTAL_SECONDS=$NEW_TOTAL_SECONDS
-        continue
-    fi
-
-    kubectl get statefulsets \
-        --namespace db \
+echo "  Creating 'dbadmin' ServiceAccount:"
+kubectl apply \
+        --filename $CLUSTER_DIR/database-dbadmin-service-account.yaml \
         --kubeconfig $KUBECONFIG \
-        | sed 's|^\(.*\)$|      \1|'
+    || exit 1
 
-    echo "    postgres is ready now."
-    break
-done
+VAULT_DATABASE_PASSWORDS_POLICY='
+path "secret/data/postgres-passwords" {
+  capabilities = ["read"]
+}
+'
 
-if test $TOTAL_SECONDS -ge $MAX_SECONDS
-then
-    echo "ERROR postgres still isn't ready after $TOTAL_SECONDS" >&2
-    exit 1
-fi
+echo "  Creating database policy for PostgreSQL to mount password secrets:"
+$VAULT_RUN \
+    "echo '$VAULT_DATABASE_PASSWORDS_POLICY' \
+         | vault policy write \
+            -ca-cert /opt/vault/tls/vault-0/ca.crt \
+            -client-cert /opt/vault/tls/vault-0/tls.crt \
+            -client-key /opt/vault/tls/vault-0/tls.key \
+            -non-interactive \
+            postgres-passwords -" \
+    || exit 1
+
+echo "  Creating Vault database-admin role to mount password secrets:"
+$VAULT_RUN \
+    "vault write \
+         -ca-cert /opt/vault/tls/vault-0/ca.crt \
+         -client-cert /opt/vault/tls/vault-0/tls.crt \
+         -client-key /opt/vault/tls/vault-0/tls.key \
+         -non-interactive \
+         auth/kubernetes/role/database-admin \
+         bound_service_account_names=dbadmin \
+         bound_service_account_namespaces=database \
+         policies=postgres-passwords" \
+    || exit 1
+
+#
+# From:
+#
+#     https://developer.hashicorp.com/vault/docs/secrets/kv/kv-v2#writing-reading-arbitrary-data
+#
+# (Cf. "You can also use Vault's password policy feature to generate arbitrary values.")
+#
+echo "  Creating PostgreSQL root and replication password secrets in Vault:"
+$VAULT_RUN \
+    'vault kv put \
+         -ca-cert /opt/vault/tls/vault-0/ca.crt \
+         -client-cert /opt/vault/tls/vault-0/tls.crt \
+         -client-key /opt/vault/tls/vault-0/tls.key \
+         -non-interactive \
+         secret/data/postgres-passwords \
+         superUserPassword=`vault read \
+             -ca-cert /opt/vault/tls/vault-0/ca.crt \
+             -client-cert /opt/vault/tls/vault-0/tls.crt \
+             -client-key /opt/vault/tls/vault-0/tls.key \
+             -non-interactive \
+             -field password \
+             sys/policies/password/kubedemo-password/generate` \
+         replicationUserPassword=`vault read \
+             -ca-cert /opt/vault/tls/vault-0/ca.crt \
+             -client-cert /opt/vault/tls/vault-0/tls.crt \
+             -client-key /opt/vault/tls/vault-0/tls.key \
+             -non-interactive \
+             -field password \
+             sys/policies/password/kubedemo-password/generate`' \
+    || exit 1
+
+#
+# You can now run something along the lines of the following to see
+# the Postgres superUserPassword and replicationUserPassword from Vault:
+#
+#     kubectl exec -i --tty vault-0 --namespace vault --kubeconfig $HOME/.kube/kubeconfig-kubedemo.yaml -- sh -c 'vault kv get -ca-cert /opt/vault/tls/vault-0/ca.crt -client-cert /opt/vault/tls/vault-0/tls.crt -client-key /opt/vault/tls/vault-0/tls.key -non-interactive secret/data/postgres-passwords'
+#
+# With something like the following output:
+#
+#     =========== Secret Path ===========
+#     secret/data/data/postgres-passwords
+#
+#     ======= Metadata =======
+#     Key                Value
+#     ---                -----
+#     created_time       2024-03-14T23:10:48.513124693Z
+#     custom_metadata    <nil>
+#     deletion_time      n/a
+#     destroyed          false
+#     version            1
+#
+#     ============= Data =============
+#     Key                        Value
+#     ---                        -----
+#     replicationUserPassword    b4P1M|vOQ!DUQqPYi^V6^lw(5xPJp.~Y
+#     superUserPassword          zh]umJ9aFMy]9>:K0JSo*]rl|cQ3PJ#S
+#
 
 echo "SUCCESS Installing database (kubegres $KUBEGRES_VERSION)."
 exit 0
