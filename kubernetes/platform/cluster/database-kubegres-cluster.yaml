@@ -12,8 +12,11 @@
 #     https://www.kubegres.io/doc/getting-started.html
 #
 # We expect the passwords for the PostgreSQL root and replication users
-# to have already been created in Vault, and exposed to Kubernetes
-# ServiceAccount "dbadmin" for read capability.
+# to have already been created in Vault, and the Vault sidecar injector
+# enabled for "db" namespace via label vault-injection = enabled.
+# The Vault sidecar is expected to spin up alongside the Kubegres pods,
+# via pod label app = postgres (applied by Kubegres, which does not
+# seem to allow arbitrary labels to be added to the Pods).
 #
 # Note that the default password hashing, as of Postgres 16.x, is
 # scram-sha-256 (a good thing; older Postgres used MD5).
@@ -38,94 +41,6 @@
 #
 # Based on:
 #
-#     https://developer.hashicorp.com/vault/tutorials/kubernetes/kubernetes-secret-store-driver
-#     https://secrets-store-csi-driver.sigs.k8s.io/topics/sync-as-kubernetes-secret
-#     https://developer.hashicorp.com/vault/docs/platform/k8s/csi
-#
-apiVersion: secrets-store.csi.x-k8s.io/v1
-kind: SecretProviderClass
-metadata:
-  name: postgres-passwords
-  namespace: db
-spec:
-  provider: vault
-  parameters:
-    #
-    # Ugh can't currently use "https://vault.vault:8200" for CSI (sigh):
-    #
-    #     Warning  FailedMount             4s                 kubelet
-    #     MountVolume.SetUp failed for volume "postgres-passwords" :
-    #     rpc error: code = Unknown desc = failed to mount secrets store
-    #     objects for pod db/postgres-1-0, err: rpc error: code = Unknown
-    #     desc = error making mount request: couldn't read secret
-    #     "superUserPassword": failed to login:
-    #     Post "https://vault.vault:8200/v1/auth/kubernetes/login":
-    #     tls: failed to verify certificate: x509: certificate is valid
-    #     for vault-0.vault-internal,
-    #     vault-0.vault-internal.vault.svc.cluster.local, not vault.vault
-    #
-    # !!! vaultAddress: "https://vault-0.vault-internal:8200"
-    vaultAddress: "https://vault.vault:8200"
-    vaultCACertPath: "/opt/vault/tls/vault/ca.crt"
-    roleName: "database-admin"
-    objects: |
-      - objectName: "superUserPassword"
-        secretPath: "secret/data/postgres-passwords"
-        secretKey: "superUserPassword"
-      - objectName: "replicationUserPassword"
-        secretPath: "secret/data/postgres-passwords"
-        secretKey: "replicationUserPassword"
-  secretObjects:  # desired state of synced K8s secret objects
-  - data:
-    - key: superUserPassword
-      objectName: superUserPassword
-    - key: replicationUserPassword
-      objectName: replicationUserPassword
-    secretName: postgres-passwords  # name of the Kubernetes Secret object
-    type: Opaque
----
-#
-# We request a fake certificate, only so that we can get the root
-# certificate authority (CA) certificate from cert-manager.  Grumpf.
-#
----
-apiVersion: cert-manager.io/v1
-kind: Certificate
-metadata:
-  name: db-vault-client-certificate
-  namespace: db
-spec:
-  secretName: db-vault-client-certificate
-  duration: 2160h  # 90 days - fine for our kubedemo.
-  renewBefore: 360h  # 15 days - fine for our kubedemo.
-  subject:
-    organizations:
-      - db
-  # The use of the common name field has been deprecated since 2000 and is
-  # discouraged from being used.
-  # commonName: postgres.db
-  isCA: false
-  privateKey:
-    algorithm: RSA
-    encoding: PKCS1
-    size: 2048
-  usages:
-    - client auth
-  # At least one of a DNS Name, URI, IP address or otherName is required.
-  # Vault requires 127.0.0.1 to unseal, because, by default, the environment
-  # variable VAULT_ADDR is populated as https://127.0.0.1:8200.
-  dnsNames:
-    - postgres.db
-    - postgres.db.svc.cluster.local
-  ipAddresses:
-    - 127.0.0.1
-  issuerRef:
-    name: kubedemo-issuer
-    kind: ClusterIssuer
----
-#
-# Based on:
-#
 #     https://www.kubegres.io/doc/getting-started.html
 #     https://www.kubegres.io/doc/properties-explained.html
 #
@@ -134,6 +49,13 @@ kind: Kubegres
 metadata:
   name: postgres
   namespace: db
+  annotations:
+    vault.hashicorp.com/vault-injection: enabled  # Use Vault injector sidecar for secrets.
+    vault.hashicorp.com/agent-inject: 'true'
+    vault.hashicorp.com/role: 'database-admin'
+    # !!! fix this:
+    vault.hashicorp.com/agent-inject-secret-database-config.txt: 'internal/data/database/config'
+
 spec:
 
   replicas: 3

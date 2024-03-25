@@ -4,4 +4,5 @@ kind: Namespace
 metadata:
   labels:
     istio-injection: disabled  # TODO !!! set to enabled
+    vault-injection: enabled  # Use Vault injector sidecar for secrets.
   name: db
