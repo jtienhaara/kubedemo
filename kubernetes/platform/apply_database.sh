@@ -99,21 +99,27 @@ kubectl apply \
         --kubeconfig $KUBECONFIG \
     || exit 1
 
-VAULT_DATABASE_PASSWORDS_POLICY='
-path "secret/data/postgres-passwords" {
+VAULT_DATABASE_SUPER_USER_PASSWORD_POLICY='
+path "secret/data/postgres-super-user" {
+  capabilities = ["read"]
+}
+'
+
+VAULT_DATABASE_REPLICATION_USER_PASSWORD_POLICY='
+path "secret/data/postgres-replication-user" {
   capabilities = ["read"]
 }
 '
 
 echo "  Creating database policy for PostgreSQL to mount password secrets:"
 $VAULT_RUN \
-    "echo '$VAULT_DATABASE_PASSWORDS_POLICY' \
+    "echo '$VAULT_DATABASE_SUPER_USER_PASSWORD_POLICY' \
          | vault policy write \
             -ca-cert /opt/vault/tls/vault-0/ca.crt \
             -client-cert /opt/vault/tls/vault-0/tls.crt \
             -client-key /opt/vault/tls/vault-0/tls.key \
             -non-interactive \
-            postgres-passwords -" \
+            postgres-super-user -" \
     || exit 1
 
 echo "  Creating Vault database-admin role to mount password secrets:"
@@ -126,7 +132,7 @@ $VAULT_RUN \
          auth/kubernetes/role/database-admin \
          bound_service_account_names=dbadmin \
          bound_service_account_namespaces=database \
-         policies=postgres-passwords" \
+         policies=postgres-replication-user" \
     || exit 1
 
 #
@@ -136,22 +142,34 @@ $VAULT_RUN \
 #
 # (Cf. "You can also use Vault's password policy feature to generate arbitrary values.")
 #
-echo "  Creating PostgreSQL root and replication password secrets in Vault:"
+echo "  Creating PostgreSQL super user password secret in Vault:"
 $VAULT_RUN \
     'vault kv put \
          -ca-cert /opt/vault/tls/vault-0/ca.crt \
          -client-cert /opt/vault/tls/vault-0/tls.crt \
          -client-key /opt/vault/tls/vault-0/tls.key \
          -non-interactive \
-         secret/data/postgres-passwords \
-         superUserPassword=`vault read \
+         secret/data/postgres-super-user \
+         username=postgres \
+         password=`vault read \
              -ca-cert /opt/vault/tls/vault-0/ca.crt \
              -client-cert /opt/vault/tls/vault-0/tls.crt \
              -client-key /opt/vault/tls/vault-0/tls.key \
              -non-interactive \
              -field password \
-             sys/policies/password/kubedemo-password/generate` \
-         replicationUserPassword=`vault read \
+             sys/policies/password/kubedemo-password/generate`' \
+    || exit 1
+
+echo "  Creating PostgreSQL replication user password secret in Vault:"
+$VAULT_RUN \
+    'vault kv put \
+         -ca-cert /opt/vault/tls/vault-0/ca.crt \
+         -client-cert /opt/vault/tls/vault-0/tls.crt \
+         -client-key /opt/vault/tls/vault-0/tls.key \
+         -non-interactive \
+         secret/data/postgres-replication-user \
+         username=replication \
+         password=`vault read \
              -ca-cert /opt/vault/tls/vault-0/ca.crt \
              -client-cert /opt/vault/tls/vault-0/tls.crt \
              -client-key /opt/vault/tls/vault-0/tls.key \
@@ -162,14 +180,16 @@ $VAULT_RUN \
 
 #
 # You can now run something along the lines of the following to see
-# the Postgres superUserPassword and replicationUserPassword from Vault:
+# the Postgres super user password or replication user password from Vault:
 #
-#     kubectl exec -i --tty vault-0 --namespace vault --kubeconfig $HOME/.kube/kubeconfig-kubedemo.yaml -- sh -c 'vault kv get -ca-cert /opt/vault/tls/vault-0/ca.crt -client-cert /opt/vault/tls/vault-0/tls.crt -client-key /opt/vault/tls/vault-0/tls.key -non-interactive secret/data/postgres-passwords'
+#     kubectl exec -i --tty vault-0 --namespace vault --kubeconfig $HOME/.kube/kubeconfig-kubedemo.yaml -- sh -c 'vault kv get -ca-cert /opt/vault/tls/vault-0/ca.crt -client-cert /opt/vault/tls/vault-0/tls.crt -client-key /opt/vault/tls/vault-0/tls.key -non-interactive secret/data/postgres-super-user'
+#
+#     kubectl exec -i --tty vault-0 --namespace vault --kubeconfig $HOME/.kube/kubeconfig-kubedemo.yaml -- sh -c 'vault kv get -ca-cert /opt/vault/tls/vault-0/ca.crt -client-cert /opt/vault/tls/vault-0/tls.crt -client-key /opt/vault/tls/vault-0/tls.key -non-interactive secret/data/postgres-replication-user'
 #
 # With something like the following output:
 #
 #     =========== Secret Path ===========
-#     secret/data/data/postgres-passwords
+#     secret/data/data/postgres-super-user
 #
 #     ======= Metadata =======
 #     Key                Value
@@ -183,8 +203,8 @@ $VAULT_RUN \
 #     ============= Data =============
 #     Key                        Value
 #     ---                        -----
-#     replicationUserPassword    b4P1M|vOQ!DUQqPYi^V6^lw(5xPJp.~Y
-#     superUserPassword          zh]umJ9aFMy]9>:K0JSo*]rl|cQ3PJ#S
+#     username                   postgres
+#     password                   zh]umJ9aFMy]9>:K0JSo*]rl|cQ3PJ#S
 #
 
 echo "SUCCESS Installing database (kubegres $KUBEGRES_VERSION)."

@@ -2,44 +2,34 @@
 #     https://cloudnative-pg.io/documentation/1.22/
 #     https://github.com/cloudnative-pg/cloudnative-pg/blob/main/LICENSE
 #
+#
+# The "postgres-super-user" and "postgres-replication-user" Secrets must
+# already have been created in the "db" Namespace, by apply_database.sh,
+# before deploying the manifests here.
+#
+# Modifications to the original:
+# - Removed "cluster-example-app-user" Secret, replaced reference to it
+#   with "postgres-super-user" Secret.
+# - Removed "cluster-example-superuser" Secret, replaced reference to it
+#   with "postgres-kubedemo-user" Secret.
+# - Removed "backup-creds" Secret, replaced with reference to Secret
+#   created by Rook/Ceph when database-postgres-storage.yaml was deployed.
+#
 
 # Example of definition of a test cluster using all the elements available
 # in the CRD. Please change values appropriately for your environment.
 # Remember that you can take advantage of convention over configuration
 # and normally you don't need to use all these definitions.
 
-apiVersion: v1
-data:
-  password: VHhWZVE0bk44MlNTaVlIb3N3cU9VUlp2UURhTDRLcE5FbHNDRUVlOWJ3RHhNZDczS2NrSWVYelM1Y1U2TGlDMg==
-  username: YXBw
-kind: Secret
-metadata:
-  name: cluster-example-app-user
-type: kubernetes.io/basic-auth
----
-apiVersion: v1
-data:
-  password: dU4zaTFIaDBiWWJDYzRUeVZBYWNCaG1TemdxdHpxeG1PVmpBbjBRSUNoc0pyU211OVBZMmZ3MnE4RUtLTHBaOQ==
-  username: cG9zdGdyZXM=
-kind: Secret
-metadata:
-  name: cluster-example-superuser
-type: kubernetes.io/basic-auth
----
-apiVersion: v1
-kind: Secret
-metadata:
-  name: backup-creds
-data:
-  ACCESS_KEY_ID: a2V5X2lk
-  ACCESS_SECRET_KEY: c2VjcmV0X2tleQ==
+# !!! "http://${AWS_ACCESS_KEY_ID}:${AWS_SECRET_ACCESSKEY}@${BUCKET_HOST}:${BUCKET_PORT}"
+
 ---
 apiVersion: postgresql.cnpg.io/v1
 kind: Cluster
 metadata:
-  name: cluster-example-full
+  name: postgres-cluster
 spec:
-  description: "Example of cluster"
+  description: "kubedemo Postgres cluster"
   imageName: ghcr.io/cloudnative-pg/postgresql:16.1
   # imagePullSecret is only required if the images are located in a private registry
   # imagePullSecrets:
@@ -60,43 +50,40 @@ spec:
 
   bootstrap:
     initdb:
-      database: app
-      owner: app
+      database: kubedemo
+      owner: kubedemo
       secret:
-        name: cluster-example-app-user
-    # Alternative bootstrap method: start from a backup
-    #recovery:
-    #  backup:
-    #    name: backup-example
+        name: postgres-kubedemo-user
 
   enableSuperuserAccess: true
   superuserSecret:
-    name: cluster-example-superuser
+    name: postgres-super-user
 
   storage:
-    storageClass: standard
+    storageClass: kubedemo-block
     size: 1Gi
 
-  backup:
-    barmanObjectStore:
-      destinationPath: s3://cluster-example-full-backup/
-      endpointURL: http://custom-endpoint:1234
-      s3Credentials:
-        accessKeyId:
-          name: backup-creds
-          key: ACCESS_KEY_ID
-        secretAccessKey:
-          name: backup-creds
-          key: ACCESS_SECRET_KEY
-      wal:
-        compression: gzip
-        encryption: AES256
-      data:
-        compression: gzip
-        encryption: AES256
-        immediateCheckpoint: false
-        jobs: 2
-    retentionPolicy: "30d"
+  # !!! backup:
+  # !!!   barmanObjectStore:
+  # !!!     destinationPath: !!! s3://cluster-example-full-backup/
+  # !!!     endpointURL: !!! http://custom-endpoint:1234
+  # !!!     s3Credentials:
+  # !!!       accessKeyId:
+  # !!!         name: postgres-bucket
+  # !!!         key: AWS_ACCESS_KEY_ID
+  # !!!       secretAccessKey:
+  # !!!         name: postgres-bucket
+  # !!!         key: AWS_SECRET_ACCESS_KEY
+  # !!!         !!!
+  # !!!     wal:
+  # !!!       compression: gzip
+  # !!!       encryption: AES256
+  # !!!     data:
+  # !!!       compression: gzip
+  # !!!       encryption: AES256
+  # !!!       immediateCheckpoint: false
+  # !!!       jobs: 2
+  # !!!   retentionPolicy: "30d"
 
   resources:
     requests:

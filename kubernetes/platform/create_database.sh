@@ -19,6 +19,12 @@ echo "Creating database (kubegres $KUBEGRES_VERSION PostgreSQL cluster)..."
 CLUSTER_DIR=/cloud-init/kubernetes/platform/cluster
 KUBECONFIG=$HOME/.kube/kubeconfig-kubedemo.yaml
 
+echo "  Creating s3 object storage for db.postgres backups:"
+kubectl apply \
+        --filename $CLUSTER_DIR/database-postgres-storage.yaml \
+        --kubeconfig $KUBECONFIG \
+    || exit 1
+
 echo "  Creating db.postgres database cluster:"
 kubectl apply \
         --filename $CLUSTER_DIR/database-kubegres-cluster.yaml \
