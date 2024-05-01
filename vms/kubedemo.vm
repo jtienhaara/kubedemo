@@ -120,4 +120,4 @@ VM_CLOUD_INIT_DATA='../kubernetes'
 #
 # Script(s) to run as the VM_USER after the VM has booted up (optional):
 #
-VM_POST_BOOT_RUN='../kubernetes/install_foundation.sh '
+VM_POST_BOOT_RUN='../kubernetes/install.sh '

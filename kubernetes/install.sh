@@ -13,7 +13,7 @@ echo "|                                                                      |"
 echo "|                          kubedemo FOUNDATION                         |"
 echo "|                                                                      |"
 echo "+----------------------------------------------------------------------+"
-$RUN_DIR/install_foundation.sh \
+/usr/bin/time --verbose $RUN_DIR/install_foundation.sh \
     || exit 1
 
 echo ""
@@ -23,7 +23,7 @@ echo "|                                                                      |"
 echo "|                           kubedemo PLATFORM                          |"
 echo "|                                                                      |"
 echo "+----------------------------------------------------------------------+"
-$RUN_DIR/install_platform.sh \
+/usr/bin/time --verbose $RUN_DIR/install_platform.sh \
     || exit 1
 
 

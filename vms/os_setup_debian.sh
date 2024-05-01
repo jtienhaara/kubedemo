@@ -6,6 +6,13 @@ echo "  Updating package sources:"
 sudo apt-get -y update \
     || exit 1
 
+# Instead of running everything through bash in order to time shell scripts,
+# install the gnu time command.
+# https://packages.debian.org/bookworm/time
+echo "  Installing gnu time:"
+sudo apt-get install -y time \
+    || exit 1
+
 # Not really necessary, Debian(-derived) cloud images come with sshd:
 echo "  Installing openssh-server:"
 sudo apt-get install -y openssh-server \
