@@ -4,6 +4,8 @@ echo "Installing the foundation for a Kubernetes demo..."
 
 RUN_DIR=`dirname $0`
 
+export DEBIAN_FRONTEND=noninteractive
+
 echo "  Checking sudo access:"
 sudo echo "  Granted sudo access." \
     || exit 1
