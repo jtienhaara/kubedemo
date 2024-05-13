@@ -69,59 +69,63 @@ echo "    Creating \"kubedemo\" cluster:"
 $RUN_DIR/foundation/create_cluster.sh \
     || exit 5
 
-echo "    Applying storage (Rook/Ceph) to \"kubedemo\" cluster:"
-$RUN_DIR/foundation/apply_storage.sh \
+echo "    Applying foundation layer manifests:"
+$RUN_DIR/foundation/apply.sh \
     || exit 5
 
-echo "    Applying observability (kube-prometheus) to \"kubedemo\" cluster:"
-$RUN_DIR/foundation/apply_observability.sh \
-    || exit 5
-
-echo "    Applying certificates (cert-manager) to \"kubedemo\" cluster:"
-$RUN_DIR/foundation/apply_certificates.sh \
-    || exit 5
-
-echo "    Applying secrets (HashiCorp Vault) to \"kubedemo\" cluster:"
-$RUN_DIR/foundation/apply_secrets.sh \
-    || exit 5
-
-echo "    Unsealing secrets (HashiCorp Vault):"
-$RUN_DIR/foundation/unseal_secrets.sh \
-    || exit 5
-
-echo "    Applying load balancer (MetalLB) to \"kubedemo\" cluster:"
-$RUN_DIR/foundation/apply_load_balancer.sh \
-    || exit 5
-
-echo "    Applying mesh (Istio) to \"kubedemo\" cluster:"
-$RUN_DIR/foundation/apply_mesh.sh \
-    || exit 5
-
-echo "    Applying log aggregation (Grafana Loki) to \"kubedemo\" cluster:"
-$RUN_DIR/foundation/apply_logging.sh \
-    || exit 5
-
-echo "    Applying authentication (Ory Oathkeeper) to \"kubedemo\" cluster:"
-$RUN_DIR/foundation/apply_authentication.sh \
-    || exit 5
-
-
-echo "  Finalizing VM setup:"
-
-echo "    Reverse proxying HTTP port 8080 from VM to kubedemo LoadBalancer:"
-$RUN_DIR/foundation/vm_reverse_proxy.sh \
-    || exit 6
-
-
-echo "  Integrating foundation components:"
-
-echo "    Integrating observability with apps:"
-$RUN_DIR/foundation/integrate_observability.sh \
-    || exit 7
-
-echo "    Integrating secrets with apps:"
-$RUN_DIR/foundation/integrate_secrets.sh \
-    || exit 7
+# !!! echo "    Applying storage (Rook/Ceph) to \"kubedemo\" cluster:"
+# !!! $RUN_DIR/foundation/apply_storage.sh \
+# !!!     || exit 5
+# !!! 
+# !!! echo "    Applying observability (kube-prometheus) to \"kubedemo\" cluster:"
+# !!! $RUN_DIR/foundation/apply_observability.sh \
+# !!!     || exit 5
+# !!! 
+# !!! echo "    Applying certificates (cert-manager) to \"kubedemo\" cluster:"
+# !!! $RUN_DIR/foundation/apply_certificates.sh \
+# !!!     || exit 5
+# !!! 
+# !!! echo "    Applying secrets (HashiCorp Vault) to \"kubedemo\" cluster:"
+# !!! $RUN_DIR/foundation/apply_secrets.sh \
+# !!!     || exit 5
+# !!! 
+# !!! echo "    Unsealing secrets (HashiCorp Vault):"
+# !!! $RUN_DIR/foundation/unseal_secrets.sh \
+# !!!     || exit 5
+# !!! 
+# !!! echo "    Applying load balancer (MetalLB) to \"kubedemo\" cluster:"
+# !!! $RUN_DIR/foundation/apply_load_balancer.sh \
+# !!!     || exit 5
+# !!! 
+# !!! echo "    Applying mesh (Istio) to \"kubedemo\" cluster:"
+# !!! $RUN_DIR/foundation/apply_mesh.sh \
+# !!!     || exit 5
+# !!! 
+# !!! echo "    Applying log aggregation (Grafana Loki) to \"kubedemo\" cluster:"
+# !!! $RUN_DIR/foundation/apply_logging.sh \
+# !!!     || exit 5
+# !!! 
+# !!! echo "    Applying authentication (Ory Oathkeeper) to \"kubedemo\" cluster:"
+# !!! $RUN_DIR/foundation/apply_authentication.sh \
+# !!!     || exit 5
+# !!! 
+# !!! 
+# !!! echo "  Finalizing VM setup:"
+# !!! 
+# !!! echo "    Reverse proxying HTTP port 8080 from VM to kubedemo LoadBalancer:"
+# !!! $RUN_DIR/foundation/vm_reverse_proxy.sh \
+# !!!     || exit 6
+# !!! 
+# !!! 
+# !!! echo "  Integrating foundation components:"
+# !!! 
+# !!! echo "    Integrating observability with apps:"
+# !!! $RUN_DIR/foundation/integrate_observability.sh \
+# !!!     || exit 7
+# !!! 
+# !!! echo "    Integrating secrets with apps:"
+# !!! $RUN_DIR/foundation/integrate_secrets.sh \
+# !!!     || exit 7
 
 
 echo "SUCCESS Installing the foundation for a Kubernetes demo."

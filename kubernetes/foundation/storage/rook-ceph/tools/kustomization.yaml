@@ -1,0 +1,8 @@
+#
+# Troubleshooting tool for Rook/Ceph.
+#
+# This should NOT be installed in production, since it opens up the possibility
+# of a user re-/mis-configuring Rook/Ceph storage.
+#
+resources:
+  - storage-rook-ceph-toolbox.yaml

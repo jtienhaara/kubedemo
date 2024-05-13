@@ -1,0 +1,22 @@
+#
+# The kubedemo foundation layer includes storage, observability,
+# certificates management, secrets management, load balanacer,
+# service mesh, logging and authentication.
+#
+# By copying, pasting and editing this kustomization file, you can
+# change which components are deployed.  For example, if you don't
+# want to deploy storage, a kustomization can be created without it.
+# Or if, some day, there are alternatives to each of the components
+# (such as linkerd for service mesh, or sealed secrets for secrets
+# management, and so on), then you can swap out the components
+# from your copy-pasta kustomization.
+#
+resources:
+  - storage/rook-ceph/
+  # !!! - observability/kube-prometheus/
+  # !!! - certificates/cert-manager/
+  # !!! - secrets/vault/
+  # !!! - load-balancer/metallb/
+  # !!! - mesh/istio/
+  # !!! - logging/loki/
+  # !!! - authentication/ory-oathkeeper/

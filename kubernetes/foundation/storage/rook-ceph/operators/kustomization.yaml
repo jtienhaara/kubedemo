@@ -1,0 +1,6 @@
+#
+# A Rook/Ceph cluster, which can be used to create block storage pools,
+# file shares, S3-style object storage, and so on.
+#
+resources:
+  - storage-rook-cluster.yaml

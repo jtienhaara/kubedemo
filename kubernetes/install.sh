@@ -23,8 +23,8 @@ echo "|                                                                      |"
 echo "|                           kubedemo PLATFORM                          |"
 echo "|                                                                      |"
 echo "+----------------------------------------------------------------------+"
-/usr/bin/time --verbose $RUN_DIR/install_platform.sh \
-    || exit 1
+# !!! /usr/bin/time --verbose $RUN_DIR/install_platform.sh \
+# !!!     || exit 1
 
 
 echo "SUCCESS Installing kubedemo."

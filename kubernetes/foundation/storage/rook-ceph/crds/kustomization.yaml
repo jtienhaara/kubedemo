@@ -1,0 +1,7 @@
+#
+# Kubernetes kinds for Rook/Ceph (CRDs, operator kind, and so on).
+#
+resources:
+  - storage-rook-crds.yaml
+  - storage-rook-common.yaml
+  - storage-rook-operator.yaml

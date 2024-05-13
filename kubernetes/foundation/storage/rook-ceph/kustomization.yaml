@@ -1,0 +1,27 @@
+#
+# Rook/Ceph for storage (block, file, object/S3 style).
+#
+resources:
+  #
+  # CRDs must be installed before creating the Rook/Ceph cluster:
+  #
+  - crds/
+
+  #
+  # The Rook/Ceph cluster must be created before we can create
+  # a block pool for volumes:
+  #
+  - operators/
+
+  #
+  # Create a block pool for volumes, and a storage class to allocate
+  # block storage from the pool, and an S3-style CephObjectStore.
+  #
+  - resources/
+
+  #
+  # By default, do NOT deploy storage-rook-ceph-toolbox.
+  # If you want it, say, in a development cluster, then add it to your
+  # kustomization.yaml.
+  #
+  # - tools/

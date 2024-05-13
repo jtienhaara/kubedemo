@@ -1,0 +1,17 @@
+#
+# Rook/Ceph block storage, file share storage, and S3-style object storage.
+#
+resources:
+  #
+  # Create a block pool for volumes, and a storage class to allocate
+  # block storage from the pool:
+  #
+  - storage-rook-blockpool.yaml
+  - storage-rook-storageclass.yaml
+
+  #
+  # S3-style object storage.
+  # Currently we do NOT wait for secrets (e.g. HashiCorp Vault) to
+  # encrypt object storage, so unencrypted is what we get:
+  #
+  - storage-rook-s3.yaml
