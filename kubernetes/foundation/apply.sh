@@ -23,7 +23,12 @@ SLEEP_SECONDS=10
 TOTAL_SECONDS=0
 while test $TOTAL_SECONDS -lt $MAX_SECONDS
 do
-    kubectl apply --filename $KUSTOMIZED_FILE --kubeconfig $KUBECONFIG
+    #
+    # kubectl apply --server-side=true is required to avoid errors:
+    #
+    #     Too long: must have at most 262144 bytes
+    #
+    kubectl apply --server-side=true --filename $KUSTOMIZED_FILE --kubeconfig $KUBECONFIG
     if test $? -ne 0
     then
         echo "          Trying kubectl apply again in $SLEEP_SECONDS seconds..."
