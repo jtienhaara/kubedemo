@@ -1,0 +1,9 @@
+resources:
+  - alertmanager-prometheusRule.yaml
+  - grafana-prometheusRule.yaml
+  - kubePrometheus-prometheusRule.yaml
+  - kubernetesControlPlane-prometheusRule.yaml
+  - kubeStateMetrics-prometheusRule.yaml
+  - nodeExporter-prometheusRule.yaml
+  - prometheusOperator-prometheusRule.yaml
+  - prometheus-prometheusRule.yaml

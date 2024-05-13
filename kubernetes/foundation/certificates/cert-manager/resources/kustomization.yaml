@@ -1,0 +1,2 @@
+resources:
+  - certificates-cert-manager-root-ca.yaml

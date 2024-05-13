@@ -1,0 +1,8 @@
+resources:
+  - kubeStateMetrics-clusterRoleBinding.yaml
+  - kubeStateMetrics-clusterRole.yaml
+  - kubeStateMetrics-deployment.yaml
+  - kubeStateMetrics-networkPolicy.yaml
+  - kubeStateMetrics-serviceAccount.yaml
+  - kubeStateMetrics-serviceMonitor.yaml
+  - kubeStateMetrics-service.yaml

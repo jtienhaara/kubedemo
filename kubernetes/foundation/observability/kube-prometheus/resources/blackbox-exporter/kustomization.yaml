@@ -1,0 +1,9 @@
+resources:
+  - blackboxExporter-clusterRoleBinding.yaml
+  - blackboxExporter-clusterRole.yaml
+  - blackboxExporter-configuration.yaml
+  - blackboxExporter-deployment.yaml
+  - blackboxExporter-networkPolicy.yaml
+  - blackboxExporter-serviceAccount.yaml
+  - blackboxExporter-serviceMonitor.yaml
+  - blackboxExporter-service.yaml

@@ -1,0 +1,8 @@
+resources:
+  - nodeExporter-clusterRoleBinding.yaml
+  - nodeExporter-clusterRole.yaml
+  - nodeExporter-daemonset.yaml
+  - nodeExporter-networkPolicy.yaml
+  - nodeExporter-serviceAccount.yaml
+  - nodeExporter-serviceMonitor.yaml
+  - nodeExporter-service.yaml

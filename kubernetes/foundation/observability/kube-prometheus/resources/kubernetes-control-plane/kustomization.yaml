@@ -1,0 +1,6 @@
+resources:
+  - kubernetesControlPlane-serviceMonitorApiserver.yaml
+  - kubernetesControlPlane-serviceMonitorCoreDNS.yaml
+  - kubernetesControlPlane-serviceMonitorKubeControllerManager.yaml
+  - kubernetesControlPlane-serviceMonitorKubelet.yaml
+  - kubernetesControlPlane-serviceMonitorKubeScheduler.yaml

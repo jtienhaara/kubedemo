@@ -1,0 +1,12 @@
+resources:
+  - prometheus/
+  - alertmanager/
+
+  - kubernetes-control-plane/
+  - kube-state-metrics/
+  - node-exporter/
+  - blackbox-exporter/
+
+  - alerts/
+
+  - grafana/

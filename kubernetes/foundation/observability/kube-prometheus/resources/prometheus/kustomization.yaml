@@ -1,0 +1,37 @@
+resources:
+  - prometheus-clusterRoleBinding.yaml
+  - prometheus-clusterRole.yaml
+  - prometheus-networkPolicy.yaml
+
+  - prometheusOperator-clusterRoleBinding.yaml
+  - prometheusOperator-clusterRole.yaml
+  - prometheusOperator-deployment.yaml
+  - prometheusOperator-networkPolicy.yaml
+  - prometheusOperator-serviceAccount.yaml
+  - prometheusOperator-serviceMonitor.yaml
+  - prometheusOperator-service.yaml
+
+  - prometheus-podDisruptionBudget.yaml
+  - prometheus-prometheus.yaml
+  - prometheus-roleBindingConfig.yaml
+  - prometheus-roleBindingSpecificNamespaces.yaml
+  - prometheus-roleConfig.yaml
+  - prometheus-roleSpecificNamespaces.yaml
+  - prometheus-serviceAccount.yaml
+  - prometheus-serviceMonitor.yaml
+  - prometheus-service.yaml
+
+  - prometheusAdapter-apiService.yaml
+  - prometheusAdapter-clusterRoleAggregatedMetricsReader.yaml
+  - prometheusAdapter-clusterRoleBindingDelegator.yaml
+  - prometheusAdapter-clusterRoleBinding.yaml
+  - prometheusAdapter-clusterRoleServerResources.yaml
+  - prometheusAdapter-clusterRole.yaml
+  - prometheusAdapter-configMap.yaml
+  - prometheusAdapter-deployment.yaml
+  - prometheusAdapter-networkPolicy.yaml
+  - prometheusAdapter-podDisruptionBudget.yaml
+  - prometheusAdapter-roleBindingAuthReader.yaml
+  - prometheusAdapter-serviceAccount.yaml
+  - prometheusAdapter-serviceMonitor.yaml
+  - prometheusAdapter-service.yaml
