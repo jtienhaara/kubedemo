@@ -120,9 +120,11 @@ echo "  Sourcing AGE encryption keys from $AGE_KEYS_FILE:"
 # Note: the Pods will not be Ready until we unseal Vault.
 # So we use status.phase=Running as our condition instead.
 #
+# Wait up to half an hour...
+#
 echo "  Waiting for vault-0, vault-1 and vault-2 Pods to be Running:"
 IS_VAULT_RUNNING=false
-for TRY_NUM in 1 2 3
+for TRY_NUM in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15
 do
     kubectl wait pod \
         --selector 'app.kubernetes.io/name=vault' \
