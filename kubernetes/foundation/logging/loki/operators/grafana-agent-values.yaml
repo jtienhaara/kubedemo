@@ -1,6 +1,9 @@
 #
 # https://github.com/grafana/agent/blob/main/operations/helm/charts/grafana-agent/values.yaml
 #
+# - Changed rbac.create true -> false
+# - Changed serviceAccount.create true -> false
+#
 # -- Overrides the chart's name. Used to change the infix in the resource names.
 nameOverride: null
 
@@ -116,11 +119,11 @@ image:
 
 rbac:
   # -- Whether to create RBAC resources for the agent.
-  create: true
+  create: false
 
 serviceAccount:
   # -- Whether to create a service account for the Grafana Agent deployment.
-  create: true
+  create: false
   # -- Additional labels to add to the created service account.
   additionalLabels: {}
   # -- Annotations to add to the created service account.

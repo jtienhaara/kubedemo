@@ -1,0 +1,2 @@
+resources:
+  - logging-grafana-agent-resources.yaml

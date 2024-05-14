@@ -12,7 +12,7 @@ echo "        Running kubectl apply:"
 # 30 minutes is a long time...!
 IS_APPLIED=false
 MAX_SECONDS=1800
-SLEEP_SECONDS=10
+SLEEP_SECONDS=30
 TOTAL_SECONDS=0
 while test $TOTAL_SECONDS -lt $MAX_SECONDS
 do
