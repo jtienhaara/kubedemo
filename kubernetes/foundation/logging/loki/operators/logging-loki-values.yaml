@@ -37,7 +37,7 @@
 # - backend.persistence.size changed from 10Gi to 1Gi
 # - backend.persistence.storageClass changed from null to kubedemo-block
 # - test.prometheusAddress changed from "http://prometheus:9090"
-#   to "http://prometheus-k8s.monitoring:9090".
+#   to "http://prometheus-k8s.monitoring.svc:9090".
 #
 loki:
   auth_enabled: false
@@ -169,7 +169,7 @@ rbac:
 test:
   enabled: true
   # -- Address of the prometheus server to query for the test
-  prometheusAddress: "http://prometheus-k8s.monitoring:9090"
+  prometheusAddress: "http://prometheus-k8s.monitoring.svc:9090"
   # -- Number of times to retry the test before failing
   timeout: 1m
   # -- Additional labels for the test pods

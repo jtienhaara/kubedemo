@@ -30,7 +30,9 @@ metadata:
   # The ConfigMap MUST be named oathkeeper-rules, otherwise the Ory Pod
   # refuses to spin up.
   #
-  name: oathkeeper-rules
+  # Oh good, now it has changed to ory-oathkeeper-rules.  *headscratch*
+  #
+  name: ory-oathkeeper-rules
   namespace: auth
 data:
   access-rules.yaml: |-

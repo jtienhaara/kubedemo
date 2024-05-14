@@ -194,6 +194,7 @@ oathkeeper:
   # so we explicitly disable Ory's default rules.  However Ory forces
   # us to keep the same ConfigMap name that Maester uses, "oathkeeper-rules" --
   # otherwise the Oathkeeper pod refuses to spin up!
+  # Now changed to "ory-oathkeeper-rules".  *headscratch*
   managedAccessRules: false
 
 ## -- Secret management
@@ -295,7 +296,8 @@ deployment:
     - name: access-rules
       configMap:
         # Must be named oathkeeper-rules:
-        name: oathkeeper-rules
+        # Now changed to ory-oathkeeper-rules *headscratch*
+        name: ory-oathkeeper-rules
     - name: jwks
       emptyDir: {}
 
