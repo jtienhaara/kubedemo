@@ -1,5 +1,7 @@
 #!/bin/sh
 
+RUN_DIR=`dirname $0`
+
 KUBECONFIG=$HOME/.kube/kubeconfig-kubedemo.yaml
 
 kubectl get pods \
@@ -19,6 +21,10 @@ kubectl get pods \
                }
            }
           ' \
-              || exit 1
+              | $RUN_DIR/filter_out_successful_jobs.sh
+if test $? -ne 0
+then
+    exit 1
+fi
 
 exit 0
