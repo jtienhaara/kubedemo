@@ -126,6 +126,7 @@ do
 
     if test "$NEXT_UNREADY_PODS" != "$LAST_UNREADY_PODS"
     then
+        echo ""
         echo "        Not yet running pods:"
         #
         # Output useful information, including title row and time since launch:
