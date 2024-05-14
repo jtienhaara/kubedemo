@@ -33,6 +33,23 @@ kubectl-slice \
     --output-dir $KUSTOMIZED_DIR/ \
     || exit 1
 
+
+echo "        Spawning extra scripts in the background:"
+for BACKGROUND_SCRIPT in \
+    $RUN_DIR/apply_secrets.sh \
+        $RUN_DIR/apply_load_balancer.sh \
+        $RUN_DIR/apply_mesh.sh
+do
+    LOG_FILE=`echo "$BACKGROUND_SCRIPT" \
+                  | sed "s|^.*/\([^/]*\)\.sh$|\1.log|'`
+    echo "          $BACKGROUND_SCRIPT (log=$LOG_FILE):"
+    $BACKGROUND_SCRIPT \
+        > "$LOG_FILE" \
+        2>&1 \
+        &
+done
+
+
 echo "        Running kubectl apply:"
 # 30 minutes is a long time...!
 IS_APPLIED=false
@@ -92,21 +109,6 @@ fi
 
 echo "        kubectl apply succeeded."
 
-
-echo "        Spawning extra scripts in the background:"
-for BACKGROUND_SCRIPT in \
-    $RUN_DIR/apply_secrets.sh \
-        $RUN_DIR/apply_load_balancer.sh \
-        $RUN_DIR/apply_mesh.sh
-do
-    LOG_FILE=`echo "$BACKGROUND_SCRIPT" \
-                  | sed "s|^.*/\([^/]*\)\.sh$|\1.log|'`
-    echo "          $BACKGROUND_SCRIPT (log=$LOG_FILE):"
-    $BACKGROUND_SCRIPT \
-        > "$LOG_FILE" \
-        2>&1 \
-        &
-done
 
 echo "        Waiting for all Pods to be Running:"
 # 30 minutes is a long time...!

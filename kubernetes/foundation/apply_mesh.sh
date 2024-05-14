@@ -19,7 +19,7 @@ KUBECONFIG=$HOME/.kube/kubeconfig-kubedemo.yaml
 
 echo "  Installing Istio profile: $ISTIO_PROFILE"
 istioctl install \
-         --filename $FOUNDATION_DIR/mesh/istio/operators/mesh-istio-profile.yaml \
+         --filename $FOUNDATION_DIR/mesh/istio/mesh-istio-profile.yaml \
          --skip-confirmation \
          --kubeconfig $KUBECONFIG \
     || exit 1
