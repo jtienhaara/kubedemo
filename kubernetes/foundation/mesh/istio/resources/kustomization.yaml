@@ -1,0 +1,2 @@
+resources:
+  - mesh-istio-gateway.yaml

@@ -1,0 +1,3 @@
+resources:
+  - authentication-ory-oathkeeper-configmap.yaml
+  - authentication-istio-resources.yaml

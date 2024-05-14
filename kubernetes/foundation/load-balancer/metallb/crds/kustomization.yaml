@@ -1,0 +1,2 @@
+resources:
+  - load-balancer-metallb-resources.yaml

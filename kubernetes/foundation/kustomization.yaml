@@ -15,8 +15,8 @@ resources:
   - storage/rook-ceph/
   - observability/kube-prometheus/
   - certificates/cert-manager/
-  # !!! not yet fully moved over: - secrets/vault/
-  # !!! not yet moved over: - load-balancer/metallb/
-  # !!! not yet moved over: - mesh/istio/
-  # !!! not yet moved over: - logging/loki/
-  # !!! not yet moved over: - authentication/ory-oathkeeper/
+  - secrets/vault/
+  - load-balancer/metallb/
+  - mesh/istio/
+  - logging/loki/
+  - authentication/ory-oathkeeper/

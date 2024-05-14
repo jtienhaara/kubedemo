@@ -115,58 +115,6 @@ echo "  Sourcing AGE encryption keys from $AGE_KEYS_FILE:"
 . "$AGE_KEYS_FILE" \
     || exit 1
 
-
-echo "  Adding secrets store CSI driver Helm repo:"
-helm repo add secrets-store-csi-driver \
-     https://kubernetes-sigs.github.io/secrets-store-csi-driver/charts \
-     --kubeconfig $KUBECONFIG \
-    || exit 1
-
-echo "  Kicking Helm:"
-helm repo update \
-     --kubeconfig $KUBECONFIG \
-    || exit 1
-
-echo "  Helm installing secrets store CSI driver:"
-helm upgrade --install csi-secrets-store \
-     secrets-store-csi-driver/secrets-store-csi-driver \
-     --version $CSI_DRIVER_HELM_VERSION \
-     --namespace kube-system \
-     --wait \
-     --kubeconfig $KUBECONFIG \
-    || exit 1
-
-echo "  Creating namespace \"vault\":"
-kubectl apply \
-        --filename $CLUSTER_DIR/secrets-vault-namespace.yaml \
-        --kubeconfig $KUBECONFIG \
-    || exit 1
-
-echo "  Creating Certificate and Secret \"vault-tls\":"
-kubectl apply \
-        --filename $CLUSTER_DIR/secrets-vault-tls.yaml \
-        --kubeconfig $KUBECONFIG \
-    || exit 1
-
-echo "  Adding HashiCorp Helm repo:"
-helm repo add hashicorp \
-     https://helm.releases.hashicorp.com \
-     --kubeconfig $KUBECONFIG \
-    || exit 1
-
-echo "  Kicking Helm:"
-helm repo update \
-     --kubeconfig $KUBECONFIG \
-    || exit 1
-
-echo "  Helm installing HashiCorp Vault:"
-helm upgrade --install vault hashicorp/vault \
-     --version $VAULT_HELM_VERSION \
-     --values $CLUSTER_DIR/secrets-vault-values.yaml \
-     --namespace vault \
-     --kubeconfig $KUBECONFIG \
-    || exit 1
-
 #
 # Wait for vault-0, vault-1 and vault-2 Pods to be running.
 # Note: the Pods will not be Ready until we unseal Vault.

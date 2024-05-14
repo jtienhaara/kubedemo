@@ -1,0 +1,10 @@
+resources:
+  - authentication-ory-oathkeeper-namespace.yaml
+
+helmCharts:
+  - name: oathkeeper
+    repo: https://k8s.ory.sh/helm/charts
+    version: 0.39.1
+    releaseName: ory
+    namespace: auth
+    valuesFile: authentication-ory-oathkeeper-values.yaml

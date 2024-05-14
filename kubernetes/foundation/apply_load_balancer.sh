@@ -28,12 +28,6 @@ KUBECONFIG=$HOME/.kube/kubeconfig-kubedemo.yaml
 # share the same network?  (Untested.)
 KIND_NETWORK_NAME=kind
 
-echo "  Applying MetalLB resources to Kubernetes cluster:"
-kubectl apply \
-        --filename $CLUSTER_DIR/load-balancer-metallb-resources.yaml \
-        --kubeconfig $KUBECONFIG \
-    || exit 1
-
 echo "  Waiting for MetalLB Kubernetes resources to be ready:"
 kubectl wait \
         pod \

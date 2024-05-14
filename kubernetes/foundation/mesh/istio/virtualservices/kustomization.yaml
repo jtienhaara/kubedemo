@@ -1,0 +1,8 @@
+resources:
+  - observability-virtual-services.yaml
+  - storage-virtual-services.yaml
+
+  #
+  # TODO Disabled for now because https upgrade isn't yet configured correctly:
+  # - secrets-vault-virtual-services.yaml
+  #

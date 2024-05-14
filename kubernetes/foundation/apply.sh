@@ -1,5 +1,6 @@
 #!/bin/sh
 
+RUN_DIR=`dirname $0`
 FOUNDATION_DIR=`dirname $0`
 ROOT_DIR=`dirname $FOUNDATION_DIR`
 KUBECONFIG=$HOME/.kube/kubeconfig-kubedemo.yaml
@@ -92,6 +93,21 @@ fi
 echo "        kubectl apply succeeded."
 
 
+echo "        Spawning extra scripts in the background:"
+for BACKGROUND_SCRIPT in \
+    $RUN_DIR/apply_secrets.sh \
+        $RUN_DIR/apply_load_balancer.sh \
+        $RUN_DIR/apply_mesh.sh
+do
+    LOG_FILE=`echo "$BACKGROUND_SCRIPT" \
+                  | sed "s|^.*/\([^/]*\)\.sh$|\1.log|'`
+    echo "          $BACKGROUND_SCRIPT (log=$LOG_FILE):"
+    $BACKGROUND_SCRIPT \
+        > "$LOG_FILE" \
+        2>&1 \
+        &
+done
+
 echo "        Waiting for all Pods to be Running:"
 # 30 minutes is a long time...!
 LAST_UNREADY_PODS="(not yet run)"
@@ -124,8 +140,10 @@ do
         break
     fi
 
-    if test "$NEXT_UNREADY_PODS" != "$LAST_UNREADY_PODS"
+    if test "$NEXT_UNREADY_PODS" = "$LAST_UNREADY_PODS"
     then
+        echo -n "."
+    else
         echo ""
         echo "        Not yet running pods:"
         #
@@ -133,6 +151,7 @@ do
         #
         echo "$GET_UNRUNNING_PODS" \
             | sed 's|^\(.*\)$|          \1|'
+        echo ""
         LAST_UNREADY_PODS=$NEXT_UNREADY_PODS
     fi
 
