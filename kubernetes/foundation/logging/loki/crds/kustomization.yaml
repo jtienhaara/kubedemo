@@ -1,9 +1,27 @@
+#
+# From:
+#
+#     https://github.com/grafana/agent/tree/main/operations/agent-static-operator/crds
+#
+# (We specifically need PodLogs version v1alpha1, plus all the others.
+# This seems to be where Grafana has moved all their CRDs, though trying
+# to figure out how they got from the old
+# https://github.com/grafana/agent/tree/main/production/operator/crds
+# directory mentioned in the Helm values.yaml to here is a lost cause.)
+#
 resources:
   - logging_grafanaagents_resources.yaml
   - logging_integrations_resources.yaml
   - logging_logsinstances_resources.yaml
   - logging_metricsinstances_resources.yaml
   - logging_podlogs_resources.yaml
-  - logging_podmonitors_resources.yaml
-  - logging_probes_resources.yaml
-  - logging_servicemonitors_resources.yaml
+
+  #
+  # Already added by kube-prometheus, so we do not include them here --
+  # but if you do not spin up kube-prometheus, you might need to
+  # add these to your own kustomization.yaml:
+  #
+  #     - logging_podmonitors_resources.yaml
+  #     - logging_probes_resources.yaml
+  #     - logging_servicemonitors_resources.yaml
+  #
