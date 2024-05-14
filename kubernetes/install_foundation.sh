@@ -32,6 +32,27 @@ echo "    Installing kustomize:"
 sudo $RUN_DIR/foundation/install_kustomize.sh \
     || exit 2
 
+#
+# kubectl-slice:
+#
+#     https://github.com/patrickdappollonio/kubectl-slice
+#
+# MIT license:
+#
+#     https://github.com/patrickdappollonio/kubectl-slice/blob/main/LICENSE
+#
+echo "    Installing kubectl-slice:"
+# !!! TODO don't assume x86/64 architecture:
+wget https://github.com/patrickdappollonio/kubectl-slice/releases/download/v1.2.9/kubectl-slice_linux_x86_64.tar.gz \
+    || exit 1
+tar xvzf kubectl-slice_linux_x86_64.tar.gz \
+    || exit 1
+sudo mv kubectl-slice /usr/local/bin/ \
+    || exit 1
+kubectl-slice --help \
+              > /dev/null \
+    || exit 1
+
 echo "    Installing helm:"
 sudo $RUN_DIR/foundation/install_helm.sh \
     || exit 2

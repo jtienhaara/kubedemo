@@ -1,3 +1,4 @@
 resources:
   - crds/
+  - operators/
   - resources/

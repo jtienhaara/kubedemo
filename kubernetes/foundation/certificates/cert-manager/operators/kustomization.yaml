@@ -1,0 +1,9 @@
+helmCharts:
+  - name: trust-manager
+    repo: https://charts.jetstack.io
+    version: v0.8.0
+    releaseName: jetstack
+    namespace: cert-manager
+    #
+    # valuesFile: (none for now)
+    #

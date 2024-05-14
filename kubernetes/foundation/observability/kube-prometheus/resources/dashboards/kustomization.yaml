@@ -1,0 +1,6 @@
+resources:
+  - dashboard-grafana-istio.yaml
+  - dashboard-grafana-logs.yaml
+  - dashboard-grafana-ory-oathkeeper.yaml
+  - dashboard-grafana-rook-ceph.yaml
+  - dashboard-grafana-vault.yaml
