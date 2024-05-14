@@ -1,2 +1,9 @@
 resources:
-  - logging-grafana-agent-resources.yaml
+  - logging_grafanaagents_resources.yaml
+  - logging_integrations_resources.yaml
+  - logging_logsinstances_resources.yaml
+  - logging_metricsinstances_resources.yaml
+  - logging_podlogs_resources.yaml
+  - logging_podmonitors_resources.yaml
+  - logging_probes_resources.yaml
+  - logging_servicemonitors_resources.yaml
