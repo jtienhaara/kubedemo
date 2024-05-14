@@ -1,8 +1,4 @@
-#
-# NOT done by kustomize for now:
-#
-# mesh-istio-profile.yaml
-#
 resources:
+  - operators/
   - resources/
   - virtualservices/
