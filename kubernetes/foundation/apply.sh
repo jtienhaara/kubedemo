@@ -37,7 +37,8 @@ kubectl-slice \
 echo "        Spawning extra scripts in the background:"
 for BACKGROUND_SCRIPT in \
     $RUN_DIR/apply_secrets.sh \
-        $RUN_DIR/apply_load_balancer.sh
+        $RUN_DIR/apply_load_balancer.sh \
+        $RUN_DIR/apply_mesh.sh
 do
     LOG_FILE=`echo "$BACKGROUND_SCRIPT" \
                   | sed 's|^.*/\([^/]*\)\.sh$|\1.log|'`
