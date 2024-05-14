@@ -3,7 +3,7 @@ resources:
   - logging-loki-storage.yaml
 
 helmCharts:
-  - name: 
+  - name: loki
     repo: https://grafana.github.io/helm-charts
     version: 5.43.1
     releaseName: grafana
