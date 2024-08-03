@@ -146,11 +146,11 @@ then
         || exit 2
 
     IS_KVM=`id --groups --name | grep kvm`
-    if test -z "$IS_KVM"
-    then
-        echo "ABORTING You must relogin as user $HOST_USER_NAME to get kvm access.  Or you can 'su - $HOST_USER_NAME' to carry on in a nested environment where your logged in user's groups are up to date." >&2
-        exit 2
-    fi
+    # !!! if test -z "$IS_KVM"
+    # !!! then
+    # !!!    echo "ABORTING You must relogin as user $HOST_USER_NAME to get kvm access.  Or you can 'su - $HOST_USER_NAME' to carry on in a nested environment where your logged in user's groups are up to date." >&2
+    # !!!    exit 2
+    # !!! fi
 fi
 
 

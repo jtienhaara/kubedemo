@@ -1,18 +1,18 @@
 #!/bin/sh
 
-#
-# kubegres for high availability PostgreSQL database cluster.
-#
-# Version 1.17 from:
-#
-#     https://github.com/reactive-tech/kubegres/tree/v1.17
-#
-# Licensed under the Apache 2.0 license:
-#
-#     https://github.com/reactive-tech/kubegres/blob/v1.17/LICENCE
-#
-
-KUBEGRES_VERSION=1.17
+# !!! #
+# !!! # kubegres for high availability PostgreSQL database cluster.
+# !!! #
+# !!! # Version 1.17 from:
+# !!! #
+# !!! #     https://github.com/reactive-tech/kubegres/tree/v1.17
+# !!! #
+# !!! # Licensed under the Apache 2.0 license:
+# !!! #
+# !!! #     https://github.com/reactive-tech/kubegres/blob/v1.17/LICENCE
+# !!! #
+# !!! 
+# !!! KUBEGRES_VERSION=1.17
 
 echo "Creating database (kubegres $KUBEGRES_VERSION PostgreSQL cluster)..."
 
@@ -25,9 +25,15 @@ kubectl apply \
         --kubeconfig $KUBECONFIG \
     || exit 1
 
+# !!! echo "  Creating db.postgres database cluster:"
+# !!! kubectl apply \
+# !!!         --filename $CLUSTER_DIR/database-kubegres-cluster.yaml \
+# !!!         --kubeconfig $KUBECONFIG \
+# !!!     || exit 1
+
 echo "  Creating db.postgres database cluster:"
 kubectl apply \
-        --filename $CLUSTER_DIR/database-kubegres-cluster.yaml \
+        --filename $CLUSTER_DIR/database-postgres-cluster.yaml \
         --kubeconfig $KUBECONFIG \
     || exit 1
 
